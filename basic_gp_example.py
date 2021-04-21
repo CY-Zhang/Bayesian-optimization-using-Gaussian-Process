@@ -42,7 +42,7 @@ ndim = len(dev_ids)
 gp_precisionmat = scan_params['gp_precisionmat']
 gp_amp = scan_params['gp_amp'] 
 gp_noise_variance =scan_params['gp_noise'] 
-hyperparams = {'precisionMatrix': gp_precisionmat, 'amplitude': gp_amp, 'noise_var': gp_noise_variance} 
+hyperparams = {'precisionMatrix': gp_precisionmat, 'amplitude_covar': gp_amp, 'noise_variance': gp_noise_variance} 
 gp = OGP(ndim, hyperparams)
 
 #create the bayesian optimizer that will use the gp as the model to optimize the machine 
@@ -52,6 +52,8 @@ print('ucb_params',opt.ucb_params)
 
 #run the gp search for some number of steps
 Obj_state_s=[]
+
+optimize_kernel_on_the_fly = None #optimize_kernel_on_the_fly is the iteration number to start optimize the kernel's hyperparmaters. If None, no optimization of the hypers during BO. 
 
 Niter = 10
 for i in range(Niter):
