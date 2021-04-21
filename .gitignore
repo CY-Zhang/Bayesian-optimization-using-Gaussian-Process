@@ -6,3 +6,6 @@ __pycache__/
 .DS_Store
 *.xccheckout
 .ipynb_checkpoints
+*.h5
+*.pickle
+*.out
