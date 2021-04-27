@@ -331,6 +331,7 @@ class BayesOpt:
         
         # update the model (may want to add noise if using testEI)
         self.model.update(x_new, y_new)# + .5*np.random.randn())
+        return x_new, y_new
             
             
     def ForcePoint(self,x_next):
@@ -582,7 +583,7 @@ def negUCB(x_new, model, ndim, nsteps, nu = 1., delta = 1.):
     else:
         tau = 2.*np.log(nsteps**(0.5*ndim+2.)*(np.pi**2.)/3./delta)
         GPUCB = y_mean + np.sqrt(nu * tau * y_var)
-
-    return -GPUCB
+    # print(ndim, nsteps, nu, delta)
+    return -GPUCB[0]
 
 
