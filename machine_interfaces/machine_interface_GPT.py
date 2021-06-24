@@ -5,6 +5,9 @@ from uscope_calc import sim
 import matplotlib.pyplot as plt
 import os
 import time
+from modules.bayes_optimization import BayesOpt, negUCB, negExpImprove
+from modules.OnlineGP import OGP
+import importlib
 # CNN related libraries
 from keras import applications, optimizers, callbacks
 from keras.models import Sequential, load_model
@@ -21,6 +24,7 @@ class machine_interface:
         self.CNNoption = CNNoption
         self.DefocusOption = DefocusOption
         self.S2 = S2 # the normalized objective lens value
+        self.aperture = 0
 
         if type(start_point) == type(None):
             current_x = np.zeros(len(self.pvs)) #replace with expression that reads current ctrl pv values (x) from machine
@@ -80,6 +84,40 @@ class machine_interface:
         self.x = np.array(x_new, ndmin=1)
         # add expressions to set machine ctrl pvs to the position called self.x -- Note: self.x is a 2-dimensional array of shape (1, ndim). To get the values as a 1d-array, use self.x[0]
 
+    def CorrectDefocus(self, lens, obj):
+
+        ndim = 1
+        dev_ids =  [str(x+1) for x in np.arange(ndim)]
+
+        start_point = [[obj]]  
+        mi_module = importlib.import_module('machine_interfaces.machine_interface_Defocus')
+        mi = mi_module.machine_interface(dev_ids = dev_ids, start_point = start_point, lens = lens)
+        mi.getState()
+        
+        gp_ls = np.array(np.ones(ndim)) * [0.317] 
+        gp_amp = 0.256
+        gp_noise = 0.000253
+        gp_precisionmat =  np.array(np.diag(1/(gp_ls**2)))
+        hyperparams = {'precisionMatrix': gp_precisionmat, 'amplitude_covar': gp_amp, 'noise_variance': gp_noise} 
+        gp = OGP(ndim, hyperparams)
+        
+        opt = BayesOpt(gp, mi, acq_func="UCB", start_dev_vals = mi.x, dev_ids = dev_ids)
+        opt.ucb_params = np.array([2, None])
+        
+        Obj_state_s=[]  # initialize empty Obj_state_s for each start point
+        Niter = 5  # run 10 iterations for each case
+        
+        for i in range(Niter):
+            Obj_state_s.append(opt.best_seen()[1])
+            opt.OptIter()
+            
+        # the optimized objective lens current and corresponding defocus is saved in opt.best_seen()[0] and [1]
+        res = opt.best_seen()
+        del mi, gp, opt
+        
+        return res
+    
+
     def getDefocus(self):
         ASCIIFILE = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian_Process/outscope.txt'
         PNGFILE = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/ronchigram.npy'
@@ -111,8 +149,8 @@ class machine_interface:
         MConHBAR  =  2.59e12
         maxsig = 1  # determine how many standard deviations are we going to plot
 
-        x_low = np.asarray([1000, -40, 387000, -660000, -3.7515e6, 119000, 640000])
-        x_high = np.asarray([2800, 40, 393000, -635000, -3.7495e6, 120300, 651000])
+        x_low = np.asarray([1000, -40, 387000, -685000, -3.7515e6, 119000, 640000])
+        x_high = np.asarray([2800, 40, 393000, -622500, -3.7495e6, 120300, 651000])
 
         xlim, ylim, shadow = sim(
                 alpha = 1.0e-4*5,
@@ -145,9 +183,10 @@ class machine_interface:
         # Get emittance from CNN model using the shadow returned by GPT
         if self.CNNoption == 1:
             x_list = []
-            # normalize then divided by 2 to match the contrast of Matlab simulated Ronchigrams
-            # frame = self.scale_range(shadow, 0, 1) / 2 * self.aperture_generator(128, 40, 40)
-            frame = self.scale_range(shadow, 0, 1)
+            if self.aperture != 0:
+                frame = self.scale_range(shadow, 0, 1) * self.aperture_generator(128, 40, self.aperture)
+            else:
+                frame = self.scale_range(shadow, 0, 1)
             new_channel = np.zeros(frame.shape)
             img_stack = np.dstack((frame, new_channel, new_channel))
             x_list.append(img_stack)

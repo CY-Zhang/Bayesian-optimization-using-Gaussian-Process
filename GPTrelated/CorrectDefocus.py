@@ -10,7 +10,7 @@ import os
 
 
 # function that create a new defocus GP and correct the objective lens current
-def CorrectDefocus(lens, obj):
+def FocusCorrection(lens, obj):
 
     ndim = 1
     dev_ids =  [str(x+1) for x in np.arange(ndim)]

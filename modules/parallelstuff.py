@@ -438,8 +438,11 @@ try:
         # return nkeep smallest values
         # sort then cut
         res = np.array(res)
+        # Add this filter step in case there are nan in the list
+        res = res[[~np.isnan(res[:,1])]]
         res = res[res[:,-1].argsort()] # sort by last column
-        res = res[res[:,-1]<=res[nkeep-1,-1]] # list of nkeep coords and function evals there
+        # After the isnan filter step, it is possible that the list is shorter than nkeep, then use either nkeep or the nrow
+        res = res[res[:,-1]<=res[min(nkeep-1, res.shape[0]-1),-1]] # list of nkeep coords and function evals there
         
         #print 'res smallest = ', res
 

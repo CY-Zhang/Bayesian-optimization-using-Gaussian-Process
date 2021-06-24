@@ -24,7 +24,9 @@ except:
     multiprocessingQ = False
 import time
 from copy import deepcopy
+import copy
 from itertools import chain
+multiprocessingQ = False
 
 class BayesOpt:
     """
@@ -109,6 +111,7 @@ class BayesOpt:
         self.dev_ids = dev_ids
         self.start_dev_vals = start_dev_vals
         self.pvs = self.dev_ids
+        self.defocus_correction = False
 
         try:
             # get initial state
@@ -325,6 +328,14 @@ class BayesOpt:
             (x_new, y_new) = (x_next, self.acq_func[2].iloc[ind,-1])
         else:
             (x_new, y_new) = self.mi.getState()
+
+        # fix defocus here if necessary, make sure the saved observation comes from small defocus.
+        if self.defocus_correction and self.mi.getDefocus() < 0.85:
+            print('Correcting defocus using S2 lens...')
+            new_S2 = self.mi.CorrectDefocus(self.mi.x, self.mi.S2)
+            self.mi.setS2(new_S2[0][0])
+            (x_new, y_new) = self.mi.getState()
+
         # add new entry to observed data
         self.X_obs = np.concatenate((self.X_obs,x_new),axis=0)
         self.Y_obs.append(y_new)
@@ -392,7 +403,7 @@ class BayesOpt:
             nsteps = 1
 
         # check to see if this is bounding step sizes
-        if(self.iter_bound or True):
+        if(self.iter_bound):
             if(self.bounds is None): # looks like a scale factor
                 self.bounds = 1.0
 
@@ -456,15 +467,15 @@ class BayesOpt:
         try:
             if(self.multiprocessingQ): # multi-processing to speed search
 
-#                 neval = 2*int(10.*2.**(ndim/12.))
-#                 nkeep = 2*min(8,neval)
+                neval = 2*int(10.*2.**(ndim/12.))
+                nkeep = 2*min(8,neval)
 
-                neval = int(3) 
-                nkeep = int(2)
+                # neval = int(3) 
+                # nkeep = int(2)
 
                 # add the 10 best points seen so far (largest Y_obs)
                 nbest = 3 # add the best points seen so far (largest Y_obs)
-                nstart = 2 # make sure some starting points are there to prevent run away searches
+                nstart = 1 # make sure some starting points are there to prevent run away searches
                 
                 yobs = np.array([y[0][0] for y in self.Y_obs])
                 isearch = yobs.argsort()[-nbest:]
@@ -474,7 +485,6 @@ class BayesOpt:
                         isearch.sort() # sort to bias searching near earlier steps
 
                 v0s = None
-                
                 for i in isearch:
 #                 """
 #                 parallelgridsearch generates pseudo-random grid, then performs an ICDF transform

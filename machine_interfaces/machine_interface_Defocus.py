@@ -99,9 +99,8 @@ class machine_interface:
         maxsig = 1  # determine how many standard deviations are we going to plot
 
         # Same high and low range, the 4th element for defocus is not used.
-        x_low = np.asarray([1000, -20, 387000, -655000, -3.7515e6, 119000, 640000])
-        x_high = np.asarray([2200, 20, 391000, -635000, -3.7495e6, 120300, 651000])
-        print(2.44e5 + self.x[0][0] * 0.06e5)
+        x_low = np.asarray([1000, -40, 387000, -685000, -3.7515e6, 119000, 640000])
+        x_high = np.asarray([2800, 40, 393000, -622500, -3.7495e6, 120300, 651000])
 
         xlim, ylim, shadow = sim(
                 alpha = 1.0e-4*5,
@@ -114,6 +113,18 @@ class machine_interface:
                 S6 = self.lens[0][2]* (x_high[2] - x_low[2]) + x_low[2],  #390000,
                 S7 = self.lens[0][3]* (x_high[3] - x_low[3]) + x_low[3],  #-654100.0
                 Obj = -3.7505e6,
+
+                # Option 2: control S7 to change defocus
+                # alpha = 1.0e-4*5,
+                # S1 = 2.5e5,
+                # S2 = 2.5e5,
+                # H1 = self.lens[0][0] * (x_high[0] - x_low[0]) + x_low[0],
+                # H2 = self.lens[0][0] * (x_high[0] - x_low[0]) + x_low[0] + self.lens[0][1] * (x_high[1] - x_low[1]) + x_low[1],
+                # S3 = self.lens[0][4]* (x_high[5] - x_low[5]) + x_low[5],  #119931.5,
+                # S4 = self.lens[0][5]* (x_high[6] - x_low[6]) + x_low[6],  #648691.415,
+                # S6 = self.lens[0][2]* (x_high[2] - x_low[2]) + x_low[2],  #390000,
+                # S7 = self.x[0][0]* (x_high[3] - x_low[3]) + x_low[3],  #-654100.0
+                # Obj = -3.7505e6,
 
              )      # the parameters that are not given an value here would be set to the default values, which could be found in uscope.py
                     # the sim function would return the Ronchigram, and save the outscope.txt file to the path that was calling this function
