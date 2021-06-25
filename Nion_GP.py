@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 # from numba import cuda
 
 '''
-06-23-21 First version of working Nion GP, tested for 200 iterations, won't overflow GPU memory.
+06-23-21 First version of working Nion GP, tested for 1000 iterations, won't overflow GPU memory.
 Maybe next step needs to refind with aperture applied.
 '''
 
@@ -34,7 +34,7 @@ if gpus:
     print(e)
 
 path = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/NionRelated/'
-ndim = 12 #input dimension
+ndim = 3 #input dimension
 acquisition_delay = 0
 
 dev_ids =  [str(x + 1) for x in np.arange(ndim)] #creat device ids (just numbers)
@@ -42,16 +42,17 @@ dev_ids =  [str(x + 1) for x in np.arange(ndim)] #creat device ids (just numbers
 # Could be removed in real instrument
 iter_bounds = [(-5e-7, 5e-7),(-5e-7, 5e-7),(-5e-7, 5e-7),(-5e-6, 5e-6),(-5e-6, 5e-6),(-3.5e-6, 3.5e-6),(-3.5e-6, 3.5e-6),(-5e-5, 5e-5),(-5e-5, 5e-5),(-3.5e-5, 3.5e-5),
 (-3.5e-5, 3.5e-5),(-3.5e-5, 3.5e-5)] 
+abr_activate = [True, True, True, False, False, False, False, False, False, False, False, False]
 # randomize starting point, in the simulator, the global minimum is at zero point.
 rs = np.random.RandomState()
-start_point = [[rs.rand() * 0.1 + 0.45 for x in iter_bounds]]
+start_point = [[rs.rand() * 0.4 + 0.3 for x in np.arange(sum(abr_activate))]]
 # start_point = [[0.501 for x in iter_bounds]]
 print(start_point)
 
 #creat machine interface
 mi_module = importlib.import_module('machine_interfaces.machine_interface_Nion')
 mi = mi_module.machine_interface(dev_ids = dev_ids, start_point = start_point, CNNoption = 1, 
-CNNpath = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/CNNmodels/VGG16_usim_40mradEmit_noApt.h5') 
+CNNpath = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/CNNmodels/VGG16_usim_40mradEmit_noApt.h5', act_list = abr_activate)
 mi.aperture = 0
 
 # Check the readout from machine interface
@@ -60,8 +61,8 @@ temp = mi.getState()
 print(temp[1][0][0])
 
 # Set up GP parameters
-gp_ls = np.array(np.ones(ndim)) * [0.123, 0.120, 0.099, 0.256, 0.190, 0.140, 0.102, 0.255, 0.289,
-0.362, 0.193, 0.197] 
+gp_ls = [0.123, 0.120, 0.099, 0.256, 0.190, 0.140, 0.102, 0.255, 0.289, 0.362, 0.193, 0.197] 
+gp_ls = np.array([gp_ls[i] for i in np.arange(len(abr_activate)) if abr_activate[i]])
 print(gp_ls)
 gp_amp = 0.143
 gp_noise = 0.000053
@@ -81,7 +82,7 @@ status_list = []
 obj_list = []
 
 # Start running GP:
-Niter = 500
+Niter = 50
 for i in range(Niter):
   temp = opt.OptIter()
   status_list.append(temp[0][0])
@@ -95,11 +96,10 @@ mi.getState()
 mi.stopAcquisition()
 
 # Save the GP process files
-idx = 0
-filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff.npy'
-while(os.path.isfile(path + filename)):
-  idx += 1
-np.save(path + filename, np.array(status_list))
-filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_prediction.npy'
-np.save(path + filename, np.array(obj_list))
-
+# idx = 0
+# filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_0.002_0.4.npy'
+# while(os.path.isfile(path + filename)):
+#   idx += 1
+# np.save(path + filename, np.array(status_list))
+# filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_prediction_UCB_0.002_0.4.npy'
+# np.save(path + filename, np.array(obj_list))

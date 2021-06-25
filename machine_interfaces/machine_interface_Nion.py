@@ -1,6 +1,5 @@
 import numpy as np
 import sys
-sys.path.insert(1, '/home/chenyu/Desktop/GaussianProcess/GPTrelated/')
 import os
 import threading
 # CNN related libraries
@@ -12,12 +11,14 @@ from nion.utils import Registry
 
 class machine_interface:
 
-    def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = ''):
+    def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = '', act_list = []):
         # initialize aberration list, this has to come before setting aberrations
         self.abr_list = ["C10", "C12.x", "C12.y", "C21.x", "C21.y", "C23.x", "C23.y", "C30", 
         "C32.x", "C32.y", "C34.x", "C34.y"]
-
+        self.default = [2e-9, 2e-9, 2e-9, 20e-9, 20e-9, 20e-9, 20e-9, 0.5e-6, 1e-6, 1e-6, 1e-6, 1e-6]
         self.abr_lim = [2e-6, 2e-6, 2e-6, 3e-5, 3e-5, 3e-5, 3e-5, 4e-4, 3e-4, 3e-4, 3e-4, 3e-4]
+        self.activate = act_list
+        # self.activate = [True, True, True, True, True, True, True, True, True, True, True, True]
         # self.abr_lim = [1e-6, 1e-6, 1e-6, 2e-5, 2e-5, 2e-5, 2e-5, 4e-4, 2e-4, 2e-4, 2e-4, 2e-4]
 
         self.aperture = 0
@@ -98,7 +99,10 @@ class machine_interface:
         idx = 0
         # for nionswift-usim, change the aberration corrector status when calling setX
         for abr_coeff in self.abr_list:
-            val = x_new[0][idx] * self.abr_lim[idx] - self.abr_lim[idx] / 2
+            if self.activate[idx]:
+                val = x_new[0][idx] * self.abr_lim[idx] - self.abr_lim[idx] / 2    
+            else:
+                val = self.default[idx]
             self.stem_controller.SetVal(abr_coeff, val)
             idx += 1
         # add expressions to set machine ctrl pvs to the position called self.x -- Note: self.x is a 2-dimensional array of shape (1, ndim). To get the values as a 1d-array, use self.x[0]
@@ -107,14 +111,14 @@ class machine_interface:
     def acquire_frame(self):
         self.frame = np.zeros([self.size, self.size])
         # self.ronchigram.start_playing()
-        print('Acquiring frame')
+        # print('Acquiring frame')
         temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
         temp = temp[512:1536, 512:1536]
-        new_shape = [128, 128]
+        new_shape = [self.size, self.size]
         shape = (new_shape[0], temp.shape[0] // new_shape[0],new_shape[1], temp.shape[1] // new_shape[1])
         temp = temp.reshape(shape).mean(-1).mean(1)
         self.frame = temp
-        print('Frame acquired.')
+        # print('Frame acquired.')
         # self.ronchigram.stop_playing()
         return
 
@@ -132,15 +136,15 @@ class machine_interface:
         return
 
     def getState(self): 
-        print("start separate thread to grab a frame.")
+        # print("start separate thread to grab a frame.")
         acquire_thread = threading.Thread(target = self.acquire_frame())
         acquire_thread.start()
         acquire_thread.join()
-        print('Acquisition finished.')
+        # print('Acquisition finished.')
 
         # Get emittance from CNN model using the image acquired from Ronchigram camera
         if self.CNNoption == 1:
-            print('Using CNN prediction.')
+            # print('Using CNN prediction.')
             threading.Thread(target = self.getCNNprdiction(self.frame))
 
         # For debug purpose, cannot run without CNN in this case.

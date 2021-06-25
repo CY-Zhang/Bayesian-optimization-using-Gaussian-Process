@@ -2,6 +2,7 @@
 06-17-21
 Script to collect image stack with varying aberration coefficient.
 Currently tested on simulator nionswift-sim.
+Should be good to run on the real instrument, not calling nion-swift in the script.
 '''
 
 from nion.utils import Registry
