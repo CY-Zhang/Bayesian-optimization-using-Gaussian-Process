@@ -62,7 +62,7 @@ class linescan:
         return
 
     def acquire_frame(self, ronchigram):
-        temp = np.asarray(ronchigram.grab_next_to_start()[0])
+        temp = ronchigram.grab_next_to_start()[0].data
         temp = temp[512:1536, 512:1536]
         temp = self.rebin(temp, [128, 128])
         # print(temp.shape)

@@ -34,25 +34,27 @@ if gpus:
     print(e)
 
 path = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/NionRelated/'
-ndim = 3 #input dimension
+# ndim = 5 #input dimension
 acquisition_delay = 0
 
-dev_ids =  [str(x + 1) for x in np.arange(ndim)] #creat device ids (just numbers)
+
 # Iteration boundary for Nionswift-sim, in the order of C10, C12.x/y, C21.x/y, C23.x/y, C30, C32.x/y, C34.x/y
 # Could be removed in real instrument
 iter_bounds = [(-5e-7, 5e-7),(-5e-7, 5e-7),(-5e-7, 5e-7),(-5e-6, 5e-6),(-5e-6, 5e-6),(-3.5e-6, 3.5e-6),(-3.5e-6, 3.5e-6),(-5e-5, 5e-5),(-5e-5, 5e-5),(-3.5e-5, 3.5e-5),
 (-3.5e-5, 3.5e-5),(-3.5e-5, 3.5e-5)] 
-abr_activate = [True, True, True, False, False, False, False, False, False, False, False, False]
+abr_activate = [False, False, False, True, True, True, True, False, False, False, False, False]
 # randomize starting point, in the simulator, the global minimum is at zero point.
+ndim = sum(abr_activate)
+dev_ids =  [str(x + 1) for x in np.arange(ndim)] #creat device ids (just numbers)
 rs = np.random.RandomState()
-start_point = [[rs.rand() * 0.4 + 0.3 for x in np.arange(sum(abr_activate))]]
+start_point = [[rs.rand() * 0.1 + 0.45 for x in np.arange(sum(abr_activate))]]
 # start_point = [[0.501 for x in iter_bounds]]
 print(start_point)
 
 #creat machine interface
 mi_module = importlib.import_module('machine_interfaces.machine_interface_Nion')
 mi = mi_module.machine_interface(dev_ids = dev_ids, start_point = start_point, CNNoption = 1, 
-CNNpath = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/CNNmodels/VGG16_usim_40mradEmit_noApt.h5', act_list = abr_activate)
+CNNpath = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/CNNmodels/VGG16_usim_40mradEmit+defocus_noApt.h5', act_list = abr_activate)
 mi.aperture = 0
 
 # Check the readout from machine interface
@@ -63,6 +65,7 @@ print(temp[1][0][0])
 # Set up GP parameters
 gp_ls = [0.123, 0.120, 0.099, 0.256, 0.190, 0.140, 0.102, 0.255, 0.289, 0.362, 0.193, 0.197] 
 gp_ls = np.array([gp_ls[i] for i in np.arange(len(abr_activate)) if abr_activate[i]])
+# gp_ls = gp_ls * 2
 print(gp_ls)
 gp_amp = 0.143
 gp_noise = 0.000053
@@ -76,13 +79,13 @@ gp = OGP(ndim, hyperparams)
 opt = BayesOpt(gp, mi, acq_func="UCB", start_dev_vals = mi.x, dev_ids = dev_ids)
 opt.ucb_params = np.array([2, None])
 # opt.ucb_params = np.array([0.002, 0.4])
-opt.bounds = [(0,1) for i in range(len(gp_ls))]
+# opt.bounds = [(0,1) for i in range(len(gp_ls))]
 print(opt.bounds)
 status_list = []
 obj_list = []
 
 # Start running GP:
-Niter = 50
+Niter = 100
 for i in range(Niter):
   temp = opt.OptIter()
   status_list.append(temp[0][0])
@@ -92,6 +95,7 @@ for i in range(Niter):
 
 # set corrector to best seen state and stop the camera
 mi.setX([opt.best_seen()[0]])
+print(opt.best_seen()[0])
 mi.getState()
 mi.stopAcquisition()
 

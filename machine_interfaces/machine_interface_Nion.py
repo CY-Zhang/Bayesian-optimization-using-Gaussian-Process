@@ -15,7 +15,7 @@ class machine_interface:
         # initialize aberration list, this has to come before setting aberrations
         self.abr_list = ["C10", "C12.x", "C12.y", "C21.x", "C21.y", "C23.x", "C23.y", "C30", 
         "C32.x", "C32.y", "C34.x", "C34.y"]
-        self.default = [2e-9, 2e-9, 2e-9, 20e-9, 20e-9, 20e-9, 20e-9, 0.5e-6, 1e-6, 1e-6, 1e-6, 1e-6]
+        self.default = [2e-9, 2e-9, 2e-9, 20e-9, 20e-9, 20e-9, 20e-9, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6]
         self.abr_lim = [2e-6, 2e-6, 2e-6, 3e-5, 3e-5, 3e-5, 3e-5, 4e-4, 3e-4, 3e-4, 3e-4, 3e-4]
         self.activate = act_list
         # self.activate = [True, True, True, True, True, True, True, True, True, True, True, True]
@@ -32,8 +32,8 @@ class machine_interface:
         self.ronchigram = self.stem_controller.ronchigram_camera
         frame_parameters = self.ronchigram.get_current_frame_parameters()
         frame_parameters["binning"] = 1
-        frame_parameters["exposure_ms"] = 50
-
+        frame_parameters["exposure_ms"] = 1000
+        
         # define a variable to save the frame acquired from camera
         self.size = 128
         self.frame = np.zeros([128, 128])
@@ -97,12 +97,15 @@ class machine_interface:
     def setX(self, x_new):
         self.x = x_new
         idx = 0
+        idx_activate = 0
         # for nionswift-usim, change the aberration corrector status when calling setX
         for abr_coeff in self.abr_list:
             if self.activate[idx]:
-                val = x_new[0][idx] * self.abr_lim[idx] - self.abr_lim[idx] / 2    
+                val = x_new[0][idx_activate] * self.abr_lim[idx] - self.abr_lim[idx] / 2    
+                idx_activate += 1
             else:
                 val = self.default[idx]
+            # print(abr_coeff, val)
             self.stem_controller.SetVal(abr_coeff, val)
             idx += 1
         # add expressions to set machine ctrl pvs to the position called self.x -- Note: self.x is a 2-dimensional array of shape (1, ndim). To get the values as a 1d-array, use self.x[0]
