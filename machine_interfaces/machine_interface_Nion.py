@@ -32,11 +32,11 @@ class machine_interface:
         self.ronchigram = self.stem_controller.ronchigram_camera
         frame_parameters = self.ronchigram.get_current_frame_parameters()
         frame_parameters["binning"] = 1
-        frame_parameters["exposure_ms"] = 1000
+        frame_parameters["exposure_ms"] = 100
         
         # define a variable to save the frame acquired from camera
         self.size = 128
-        self.frame = np.zeros([128, 128])
+        self.frame = np.zeros([self.size, self.size])
 
         os.environ["CUDA_VISIBLE_DEVICES"]="0" # specify which GPU to use
         self.pvs = np.array(dev_ids)

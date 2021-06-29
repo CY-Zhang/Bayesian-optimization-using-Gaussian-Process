@@ -403,6 +403,7 @@ class BayesOpt:
             nsteps = 1
 
         # check to see if this is bounding step sizes
+        # print(self.iter_bound)
         if(self.iter_bound):
             if(self.bounds is None): # looks like a scale factor
                 self.bounds = 1.0
@@ -414,6 +415,7 @@ class BayesOpt:
 
         else:
             iter_bounds = self.bounds
+        # print(self.iter_bound, relative_bounds)
   
         # options for finding the peak of the acquisition function:
         optmethod = 'L-BFGS-B' # L-BFGS-B, BFGS, TNC, and SLSQP allow bounds whereas Powell and COBYLA don't
@@ -505,11 +507,13 @@ class BayesOpt:
                 
                 
                 if basinhoppingQ:
+                    print("multi-processing, basinhoppingQ")
                     # use basinhopping
                     bkwargs = dict(niter=niter,niter_success=niter_success, minimizer_kwargs={'method':optmethod,'args':fargs,'tol':tolerance,'bounds':iter_bounds,'options':{'maxiter':maxiter}}) # keyword args for basinhopping
                     res = parallelbasinhopping(aqfcn,x0s,bkwargs)
                 
                 else:
+                    print("multi-processing, minimize")
                     # use minimize
                     mkwargs = dict(bounds=iter_bounds, method=optmethod, options={'maxiter':maxiter}, tol=tolerance) # keyword args for scipy.optimize.minimize
                     res = parallelminimize(aqfcn,x0s,fargs,mkwargs,v0best,relative_bounds=relative_bounds)
@@ -517,9 +521,11 @@ class BayesOpt:
             else: # single-processing
 
                 if basinhoppingQ:
+                    print("single-processing, basinhoppingQ")
                     res = basinhopping(aqfcn, x_start,niter=niter,niter_success=niter_success, minimizer_kwargs={'method':optmethod,'args':(self.model, y_best, self.acq_func[1], self.alpha),'tol':tolerance,'bounds':iter_bounds,'options':{'maxiter':maxiter}})
 
                 else:
+                    print("single-processing, minimize")
                     res = minimize(aqfcn, x_start, args=(self.model, y_best, self.acq_func[1], self.alpha), method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
 
                 res = res.x

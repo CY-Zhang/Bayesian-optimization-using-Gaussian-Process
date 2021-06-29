@@ -18,16 +18,10 @@ class linescan:
         # camera parameters
         self.exposure_ms = 50
         self.binning = 1     # full frame has 2048 px.
+        self.rep = 1
         self.abr_list = ["C10", "C12.x", "C12.y", "C21.x", "C21.y", "C23.x", "C23.y", "C30", 
         "C32.x", "C32.y", "C34.x", "C34.y"]
         self.default = [2e-9, 2e-9, 2e-9, 20e-9, 20e-9, 20e-9, 20e-9, 0.5e-6, 1e-6, 1e-6, 1e-6, 1e-6]
-        # Connect to ronchigram camera and setup camera parameters
-        stem_controller = Registry.get_component("stem_controller")
-        ronchigram = stem_controller.ronchigram_camera
-        frame_parameters = ronchigram.get_current_frame_parameters()
-        frame_parameters["binning"] = self.binning
-        frame_parameters["exposure_ms"] = self.exposure_ms
-        ronchigram.start_playing(frame_parameters)
 
     def acquire_series(self, abr_coeff, abr_range, nsteps):
         # name of aberration coefficient to vary
@@ -47,15 +41,16 @@ class linescan:
         ronchigram = stem_controller.ronchigram_camera
         # start acquisition for each aberration value in the list, in a separate thread.
         for i in value_list:
-            if stem_controller.SetVal(self.abr_coeff, i):
-                threading.Thread(target = self.acquire_frame(ronchigram)).start()
-                print(self.abr_coeff + ' ' + str(i))
+            for _ in range(self.rep):
+                if stem_controller.SetVal(self.abr_coeff, i):
+                    threading.Thread(target = self.acquire_frame(ronchigram)).start()
+                    print(self.abr_coeff + ' ' + str(i))
         # After acquisition, set the value back to the default number.
         stem_controller.SetVal(self.abr_coeff, self.default[self.abr_list.index(self.abr_coeff)])
 
         # save the acquired image stack.
         image_stack_array = np.asarray(self.image_stack)
-        filename = self.abr_coeff + '_' + str(abr_range) + 'm_' + str(self.nsteps) + 'steps_' + str(self.exposure_ms) + 'ms_bin' + str(self.binning) + '.npy'
+        filename = self.abr_coeff + '_' + str(abr_range) + 'm_' + str(self.nsteps) + 'steps_' + str(self.exposure_ms) + 'ms_bin' + str(self.binning) + '_repx' + str(self.rep) + '.npy'
         print(self.path + filename)
         np.save(self.path + filename, image_stack_array)
         del image_stack_array
@@ -77,7 +72,15 @@ class linescan:
         return
 
     def set_default(self):
+        # Connect to ronchigram camera and setup camera parameters
         stem_controller = Registry.get_component("stem_controller")
+        ronchigram = stem_controller.ronchigram_camera
+        frame_parameters = ronchigram.get_current_frame_parameters()
+        frame_parameters["binning"] = self.binning
+        frame_parameters["exposure_ms"] = self.exposure_ms
+        ronchigram.start_playing(frame_parameters)
+        stem_controller = Registry.get_component("stem_controller")
+        # set up aberration coefficients
         idx = 0
         for abr_coeff in self.abr_list:
             stem_controller.SetVal(abr_coeff, self.default[idx])
@@ -90,6 +93,9 @@ class linescan:
 
 
 obj = linescan('/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/NionRelated/')
+obj.exposure_ms = 50
+obj.binning = 1
+obj.rep = 5
 obj.set_default()
 obj.acquire_series('C10', 2e-6, 100)
 obj.acquire_series('C12.x', 2e-6, 100)
