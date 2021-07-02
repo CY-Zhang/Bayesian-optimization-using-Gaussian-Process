@@ -526,8 +526,8 @@ class BayesOpt:
 
                 else:
                     print("single-processing, minimize")
-                    res = minimize(aqfcn, x_start, args=(self.model, y_best, self.acq_func[1], self.alpha), method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
-
+                    # res = minimize(aqfcn, x_start, args=(self.model, y_best, self.acq_func[1], self.alpha), method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
+                    res = minimize(aqfcn, x_start, args=fargs, method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
                 res = res.x
                 
         except:
@@ -599,7 +599,5 @@ def negUCB(x_new, model, ndim, nsteps, nu = 1., delta = 1.):
     else:
         tau = 2.*np.log(nsteps**(0.5*ndim+2.)*(np.pi**2.)/3./delta)
         GPUCB = y_mean + np.sqrt(nu * tau * y_var)
-    # print(ndim, nsteps, nu, delta)
+        # print(ndim, nsteps, nu, delta, tau, GPUCB)
     return -GPUCB[0]
-
-

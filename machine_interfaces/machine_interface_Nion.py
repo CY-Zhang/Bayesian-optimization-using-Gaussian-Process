@@ -11,28 +11,32 @@ from nion.utils import Registry
 
 class machine_interface:
 
-    def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = '', act_list = []):
+    def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = '', act_list = [], readDefault = False):
         # initialize aberration list, this has to come before setting aberrations
         self.abr_list = ["C10", "C12.x", "C12.y", "C21.x", "C21.y", "C23.x", "C23.y", "C30", 
         "C32.x", "C32.y", "C34.x", "C34.y"]
         self.default = [2e-9, 2e-9, 2e-9, 20e-9, 20e-9, 20e-9, 20e-9, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6]
         self.abr_lim = [2e-6, 2e-6, 2e-6, 3e-5, 3e-5, 3e-5, 3e-5, 4e-4, 3e-4, 3e-4, 3e-4, 3e-4]
         self.activate = act_list
-        # self.activate = [True, True, True, True, True, True, True, True, True, True, True, True]
         # self.abr_lim = [1e-6, 1e-6, 1e-6, 2e-5, 2e-5, 2e-5, 2e-5, 4e-4, 2e-4, 2e-4, 2e-4, 2e-4]
 
+        # option to read existing default value, can be used when running experiment
+        self.readDefault = readDefault
         self.aperture = 0
         # Initialize stem controller
         self.stem_controller = Registry.get_component("stem_controller")
-        for abr_coeff in self.abr_list:
-            _, _= self.stem_controller.TryGetVal(abr_coeff)
+        for i in range(len(self.abr_list)):
+            abr_coeff = self.abr_list[i]
+            _, val= self.stem_controller.TryGetVal(abr_coeff)
+            if self.readDefault:
+                self.default[i] = val
             print(abr_coeff + ' successfully loaded.')
         
         # Connect to ronchigram camera and setup camera parameters
         self.ronchigram = self.stem_controller.ronchigram_camera
         frame_parameters = self.ronchigram.get_current_frame_parameters()
         frame_parameters["binning"] = 1
-        frame_parameters["exposure_ms"] = 100
+        frame_parameters["exposure_ms"] = 50 # TODO, change to a variable
         
         # define a variable to save the frame acquired from camera
         self.size = 128
@@ -61,6 +65,7 @@ class machine_interface:
         else: 
             self.setX(start_point)
 
+    # initialize a VGG16 model and load pre-trained weights.
     def loadCNN(self, path):
         os.environ["CUDA_VISIBLE_DEVICES"]="0"
         model = applications.VGG16(weights=None, include_top=False, input_shape=(128, 128, 3))
@@ -94,6 +99,7 @@ class machine_interface:
         apt_mask = np.sqrt(xv*xv + yv*yv) < ap_size # aperture mask
         return apt_mask
 
+    # set the values of activated aberration coefficients.
     def setX(self, x_new):
         self.x = x_new
         idx = 0
@@ -111,12 +117,18 @@ class machine_interface:
         # add expressions to set machine ctrl pvs to the position called self.x -- Note: self.x is a 2-dimensional array of shape (1, ndim). To get the values as a 1d-array, use self.x[0]
         return
     
+    # function to resume to default aberrations
+    def resume_default(self):
+        self.setX([self.default])
+    
     def acquire_frame(self):
         self.frame = np.zeros([self.size, self.size])
         # self.ronchigram.start_playing()
         # print('Acquiring frame')
         temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
-        temp = temp[512:1536, 512:1536]
+        # temp = temp[512:1536, 512:1536]
+        # works well on actual Nion detector
+        temp = temp[384:1664, 384:1664]  # TODO, change into an input variable
         new_shape = [self.size, self.size]
         shape = (new_shape[0], temp.shape[0] // new_shape[0],new_shape[1], temp.shape[1] // new_shape[1])
         temp = temp.reshape(shape).mean(-1).mean(1)
@@ -139,11 +151,8 @@ class machine_interface:
         return
 
     def getState(self): 
-        # print("start separate thread to grab a frame.")
         acquire_thread = threading.Thread(target = self.acquire_frame())
         acquire_thread.start()
-        acquire_thread.join()
-        # print('Acquisition finished.')
 
         # Get emittance from CNN model using the image acquired from Ronchigram camera
         if self.CNNoption == 1:

@@ -22,6 +22,7 @@ class linescan:
         self.abr_list = ["C10", "C12.x", "C12.y", "C21.x", "C21.y", "C23.x", "C23.y", "C30", 
         "C32.x", "C32.y", "C34.x", "C34.y"]
         self.default = [2e-9, 2e-9, 2e-9, 20e-9, 20e-9, 20e-9, 20e-9, 0.5e-6, 1e-6, 1e-6, 1e-6, 1e-6]
+        self.default = [-11.08e-9, -16.4e-9, 3.9e-9, 344.4e-9, 224.7e-9, 20e-9, 20e-9, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6]
 
     def acquire_series(self, abr_coeff, abr_range, nsteps):
         # name of aberration coefficient to vary
@@ -30,9 +31,10 @@ class linescan:
         self.abr_range = abr_range
         # number of steps to change the aberration coefficients.
         self.nsteps = nsteps
+        default_val = self.default[self.abr_list.index(abr_coeff)]
 
         # initialize list for aberration and image.
-        value_list = [(i - self.nsteps//2) * self.abr_range / self.nsteps for i in range(self.nsteps)]
+        value_list = [(i - self.nsteps//2) * self.abr_range / self.nsteps + default_val for i in range(self.nsteps)]
         self.image_stack = []
         # Connect to stem controller to setup aberration
         stem_controller = Registry.get_component("stem_controller")
@@ -50,7 +52,7 @@ class linescan:
 
         # save the acquired image stack.
         image_stack_array = np.asarray(self.image_stack)
-        filename = self.abr_coeff + '_' + str(abr_range) + 'm_' + str(self.nsteps) + 'steps_' + str(self.exposure_ms) + 'ms_bin' + str(self.binning) + '_repx' + str(self.rep) + 'maxFOV.npy'
+        filename = self.abr_coeff + '_' + str(abr_range) + 'm_' + str(self.nsteps) + 'steps_' + str(self.exposure_ms) + 'ms_bin' + str(self.binning) + '_repx' + str(self.rep) + 'localmin_fullframe.npy'
         print(self.path + filename)
         np.save(self.path + filename, image_stack_array)
         del image_stack_array
@@ -58,7 +60,7 @@ class linescan:
 
     def acquire_frame(self, ronchigram):
         temp = ronchigram.grab_next_to_start()[0].data
-        temp = temp[384:1664, 384:1664]
+        # temp = temp[512:1536, 512:1536]
         temp = self.rebin(temp, [128, 128])
         # print(temp.shape)
         self.image_stack.append(temp)
@@ -92,37 +94,21 @@ class linescan:
         return arr.reshape(shape).mean(-1).mean(1)
 
 
-obj = linescan('C:/Users/ASUser/Downloads/')
-obj.exposure_ms = 100
+obj = linescan('/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/NionRelated/')
+obj.exposure_ms = 50
 obj.binning = 1
-obj.rep = 5
+obj.rep = 1
 obj.set_default()
-obj.acquire_series('C10', 2e-6, 100)
-obj.acquire_series('C12.x', 2e-6, 100)
-obj.acquire_series('C12.y', 2e-6, 100)
-obj.acquire_series('C21.x', 3e-5, 100)
-obj.acquire_series('C21.y', 3e-5, 100)
-obj.acquire_series('C23.x', 3e-5, 100)
-obj.acquire_series('C23.y', 3e-5, 100)
-obj.acquire_series('C30', 4e-4, 100)
-obj.acquire_series('C32.x', 3e-4, 100)
-obj.acquire_series('C32.y', 3e-4, 100)
-obj.acquire_series('C34.x', 2e-4, 100)
-obj.acquire_series('C34.y', 2e-4, 100)
-obj.exposure_ms = 200
-obj.binning = 1
-obj.rep = 5
-obj.set_default()
-obj.acquire_series('C10', 2e-6, 100)
-obj.acquire_series('C12.x', 2e-6, 100)
-obj.acquire_series('C12.y', 2e-6, 100)
-obj.acquire_series('C21.x', 3e-5, 100)
-obj.acquire_series('C21.y', 3e-5, 100)
-obj.acquire_series('C23.x', 3e-5, 100)
-obj.acquire_series('C23.y', 3e-5, 100)
-obj.acquire_series('C30', 4e-4, 100)
-obj.acquire_series('C32.x', 3e-4, 100)
-obj.acquire_series('C32.y', 3e-4, 100)
-obj.acquire_series('C34.x', 2e-4, 100)
-obj.acquire_series('C34.y', 2e-4, 100)
+# obj.acquire_series('C10', 2e-6, 100)
+# obj.acquire_series('C12.x', 2e-6, 100)
+# obj.acquire_series('C12.y', 2e-6, 100)
+obj.acquire_series('C21.x', 3e-6, 100)
+obj.acquire_series('C21.y', 3e-6, 100)
+# obj.acquire_series('C23.x', 3e-5, 100)
+# obj.acquire_series('C23.y', 3e-5, 100)
+# obj.acquire_series('C30', 4e-4, 100)
+# obj.acquire_series('C32.x', 3e-4, 100)
+# obj.acquire_series('C32.y', 3e-4, 100)
+# obj.acquire_series('C34.x', 3e-4, 100)
+# obj.acquire_series('C34.y', 3e-4, 100)
 obj.stop_playing()

@@ -173,6 +173,8 @@ class OGP(object):
         elif(isinstance(self.prmean, collections.Callable)): # we have a prior mean
             priorMean = self.priorMean(x_in)
             return gpMean + priorMean, gpVar
+        elif(self.prmean):
+            return gpMean + self.prmean, gpVar
         else: # no prior
             return gpMean, gpVar
 
