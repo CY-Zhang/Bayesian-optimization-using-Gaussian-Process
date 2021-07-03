@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 import os
 import threading
 # CNN related libraries
@@ -12,17 +11,23 @@ from nion.utils import Registry
 class machine_interface:
 
     def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = '', act_list = [], readDefault = False):
+        # Basic setups
+        os.environ["CUDA_VISIBLE_DEVICES"]="0" # specify which GPU to use
+        self.pvs = np.array(dev_ids)
+        self.name = 'Nion'
+        self.CNNoption = CNNoption
+        
         # initialize aberration list, this has to come before setting aberrations
         self.abr_list = ["C10", "C12.x", "C12.y", "C21.x", "C21.y", "C23.x", "C23.y", "C30", 
         "C32.x", "C32.y", "C34.x", "C34.y"]
         self.default = [2e-9, 2e-9, 2e-9, 20e-9, 20e-9, 20e-9, 20e-9, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6]
-        self.abr_lim = [2e-6, 2e-6, 2e-6, 3e-5, 3e-5, 3e-5, 3e-5, 4e-4, 3e-4, 3e-4, 3e-4, 3e-4]
+        self.abr_lim = [2e-6, 2e-6, 2e-6, 3e-5, 3e-5, 3e-5, 3e-5, 4e-4, 3e-4, 3e-4, 2e-4, 2e-4]
         self.activate = act_list
-        # self.abr_lim = [1e-6, 1e-6, 1e-6, 2e-5, 2e-5, 2e-5, 2e-5, 4e-4, 2e-4, 2e-4, 2e-4, 2e-4]
 
         # option to read existing default value, can be used when running experiment
         self.readDefault = readDefault
         self.aperture = 0
+
         # Initialize stem controller
         self.stem_controller = Registry.get_component("stem_controller")
         for i in range(len(self.abr_list)):
@@ -42,11 +47,7 @@ class machine_interface:
         self.size = 128
         self.frame = np.zeros([self.size, self.size])
 
-        os.environ["CUDA_VISIBLE_DEVICES"]="0" # specify which GPU to use
-        self.pvs = np.array(dev_ids)
-        self.name = 'Nion'
-        self.CNNoption = CNNoption
-
+        # Load the CNN model for objective prediction
         if CNNoption == 1:
             # load CNN architecture in a separate thread
             threading.Thread(target = self.loadCNN(CNNpath))
@@ -86,12 +87,14 @@ class machine_interface:
         print('CNN model loaded with weights.')
         return
 
+    # function to scale Ronchigram to [0,1]
     def scale_range(self, input, min, max):
         input += -(np.min(input))
         input /= np.max(input) / (max - min)
         input += min
         return input
 
+    # function to generate an aperture mask on the Ronchigram
     def aperture_generator(self, px_size, simdim, ap_size):
         x = np.linspace(-simdim, simdim, px_size)
         y = np.linspace(-simdim, simdim, px_size)
@@ -104,7 +107,7 @@ class machine_interface:
         self.x = x_new
         idx = 0
         idx_activate = 0
-        # for nionswift-usim, change the aberration corrector status when calling setX
+        # set activated aberration coeff to desired value, and default values for the rest
         for abr_coeff in self.abr_list:
             if self.activate[idx]:
                 val = x_new[0][idx_activate] * self.abr_lim[idx] - self.abr_lim[idx] / 2    
@@ -114,29 +117,29 @@ class machine_interface:
             # print(abr_coeff, val)
             self.stem_controller.SetVal(abr_coeff, val)
             idx += 1
-        # add expressions to set machine ctrl pvs to the position called self.x -- Note: self.x is a 2-dimensional array of shape (1, ndim). To get the values as a 1d-array, use self.x[0]
         return
     
     # function to resume to default aberrations
     def resume_default(self):
         self.setX([self.default])
     
+    # function to acquire a single frame by calling grab_next_to_start
     def acquire_frame(self):
         self.frame = np.zeros([self.size, self.size])
         # self.ronchigram.start_playing()
         # print('Acquiring frame')
         temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
-        # temp = temp[512:1536, 512:1536]
-        # works well on actual Nion detector
+        # [384:1664] works well on actual Nion detector
         temp = temp[384:1664, 384:1664]  # TODO, change into an input variable
         new_shape = [self.size, self.size]
         shape = (new_shape[0], temp.shape[0] // new_shape[0],new_shape[1], temp.shape[1] // new_shape[1])
         temp = temp.reshape(shape).mean(-1).mean(1)
         self.frame = temp
         # print('Frame acquired.')
-        # self.ronchigram.stop_playing()
         return
 
+    # function to set objective based on CNN prediction, no return value, self.objective state
+    # will be updated
     def getCNNprdiction(self, frame_array):
         x_list = []
         frame_array = self.scale_range(frame_array, 0, 1)
@@ -150,6 +153,7 @@ class machine_interface:
         self.objective_state = 1 - prediction[0][0]
         return
 
+    # function to collect frame and call CNN to predict objective.
     def getState(self): 
         acquire_thread = threading.Thread(target = self.acquire_frame())
         acquire_thread.start()
@@ -166,6 +170,7 @@ class machine_interface:
 
         return np.array(self.x, ndmin = 2), np.array([[self.objective_state]])
 
+    # function to stop acquisition on the Ronchigram camera
     def stopAcquisition(self):
         if self.ronchigram:
             self.ronchigram.stop_playing()

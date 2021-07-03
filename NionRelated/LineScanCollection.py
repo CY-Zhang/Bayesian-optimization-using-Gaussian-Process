@@ -36,8 +36,8 @@ class linescan:
         self.image_stack = []
         # Connect to stem controller to setup aberration
         stem_controller = Registry.get_component("stem_controller")
-        success, _ = stem_controller.TryGetVal(abr_coeff)
-        print(success)
+        success, initial_val = stem_controller.TryGetVal(abr_coeff)
+        print(str(success) + str(initial_val))
         ronchigram = stem_controller.ronchigram_camera
         # start acquisition for each aberration value in the list, in a separate thread.
         for i in value_list:
@@ -46,7 +46,7 @@ class linescan:
                     threading.Thread(target = self.acquire_frame(ronchigram)).start()
                     print(self.abr_coeff + ' ' + str(i))
         # After acquisition, set the value back to the default number.
-        stem_controller.SetVal(self.abr_coeff, self.default[self.abr_list.index(self.abr_coeff)])
+        stem_controller.SetVal(self.abr_coeff, initial_val)
 
         # save the acquired image stack.
         image_stack_array = np.asarray(self.image_stack)
@@ -93,36 +93,54 @@ class linescan:
 
 
 obj = linescan('C:/Users/ASUser/Downloads/')
-obj.exposure_ms = 100
+obj.exposure_ms = 50
+obj.binning = 1
+obj.rep = 5
+# obj.set_default()
+# obj.acquire_series('C10', 2e-6, 100)
+# obj.acquire_series('C12.x', 1.5e-6, 100)
+# obj.acquire_series('C12.y', 1.5e-6, 100)
+# obj.acquire_series('C21.x', 3e-5, 100)
+# obj.acquire_series('C21.y', 3e-5, 100)
+# obj.acquire_series('C23.x', 1e-5, 100)
+# obj.acquire_series('C23.y', 1e-5, 100)
+# obj.acquire_series('C30', 3e-4, 100)
+# obj.acquire_series('C32.x', 2e-4, 100)
+# obj.acquire_series('C32.y', 2e-4, 100)
+# obj.acquire_series('C34.x', 2e-4, 100)
+obj.acquire_series('C34.y', 1.5e-4, 100)
+
+obj.exposure_ms = 25
+obj.binning = 1
+obj.rep = 5
+obj.set_default()
+# obj.acquire_series('C10', 2e-6, 100)
+# obj.acquire_series('C12.x', 1.5e-6, 100)
+# obj.acquire_series('C12.y', 1.5e-6, 100)
+# obj.acquire_series('C21.x', 3e-5, 100)
+# obj.acquire_series('C21.y', 3e-5, 100)
+# obj.acquire_series('C23.x', 1e-5, 100)
+# obj.acquire_series('C23.y', 1e-5, 100)
+# obj.acquire_series('C30', 3e-4, 100)
+# obj.acquire_series('C32.x', 2e-4, 100)
+# obj.acquire_series('C32.y', 2e-4, 100)
+# obj.acquire_series('C34.x', 2e-4, 100)
+obj.acquire_series('C34.y', 1.5e-4, 100)
+
+obj.exposure_ms = 10
 obj.binning = 1
 obj.rep = 5
 obj.set_default()
 obj.acquire_series('C10', 2e-6, 100)
-obj.acquire_series('C12.x', 2e-6, 100)
-obj.acquire_series('C12.y', 2e-6, 100)
+obj.acquire_series('C12.x', 1.5e-6, 100)
+obj.acquire_series('C12.y', 1.5e-6, 100)
 obj.acquire_series('C21.x', 3e-5, 100)
 obj.acquire_series('C21.y', 3e-5, 100)
-obj.acquire_series('C23.x', 3e-5, 100)
-obj.acquire_series('C23.y', 3e-5, 100)
-obj.acquire_series('C30', 4e-4, 100)
-obj.acquire_series('C32.x', 3e-4, 100)
-obj.acquire_series('C32.y', 3e-4, 100)
+obj.acquire_series('C23.x', 1e-5, 100)
+obj.acquire_series('C23.y', 1e-5, 100)
+obj.acquire_series('C30', 3e-4, 100)
+obj.acquire_series('C32.x', 2e-4, 100)
+obj.acquire_series('C32.y', 2e-4, 100)
 obj.acquire_series('C34.x', 2e-4, 100)
-obj.acquire_series('C34.y', 2e-4, 100)
-obj.exposure_ms = 200
-obj.binning = 1
-obj.rep = 5
-obj.set_default()
-obj.acquire_series('C10', 2e-6, 100)
-obj.acquire_series('C12.x', 2e-6, 100)
-obj.acquire_series('C12.y', 2e-6, 100)
-obj.acquire_series('C21.x', 3e-5, 100)
-obj.acquire_series('C21.y', 3e-5, 100)
-obj.acquire_series('C23.x', 3e-5, 100)
-obj.acquire_series('C23.y', 3e-5, 100)
-obj.acquire_series('C30', 4e-4, 100)
-obj.acquire_series('C32.x', 3e-4, 100)
-obj.acquire_series('C32.y', 3e-4, 100)
-obj.acquire_series('C34.x', 2e-4, 100)
-obj.acquire_series('C34.y', 2e-4, 100)
+obj.acquire_series('C34.y', 1.5e-4, 100)
 obj.stop_playing()
