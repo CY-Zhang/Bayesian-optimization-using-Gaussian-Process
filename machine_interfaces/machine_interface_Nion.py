@@ -21,7 +21,8 @@ class machine_interface:
         self.abr_list = ["C10", "C12.x", "C12.y", "C21.x", "C21.y", "C23.x", "C23.y", "C30", 
         "C32.x", "C32.y", "C34.x", "C34.y"]
         self.default = [2e-9, 2e-9, 2e-9, 20e-9, 20e-9, 20e-9, 20e-9, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6, 0.5e-6]
-        self.abr_lim = [2e-6, 2e-6, 2e-6, 3e-5, 3e-5, 3e-5, 3e-5, 4e-4, 3e-4, 3e-4, 2e-4, 2e-4]
+        # self.abr_lim = [2e-6, 1.5e-6, 1.5e-6, 3e-5, 3e-5, 1e-5, 1e-5, 3e-4, 2e-4, 2e-4, 1.5e-4, 1.5e-4]
+        self.abr_lim = [2e-7, 1.5e-7, 1.5e-7, 3e-6, 3e-6, 1e-5, 1e-5, 3e-4, 2e-4, 2e-4, 1.5e-4, 1.5e-4]
         self.activate = act_list
 
         # option to read existing default value, can be used when running experiment
@@ -41,7 +42,7 @@ class machine_interface:
         self.ronchigram = self.stem_controller.ronchigram_camera
         frame_parameters = self.ronchigram.get_current_frame_parameters()
         frame_parameters["binning"] = 1
-        frame_parameters["exposure_ms"] = 50 # TODO, change to a variable
+        frame_parameters["exposure_ms"] = 250 # TODO, change to a variable
         
         # define a variable to save the frame acquired from camera
         self.size = 128
@@ -130,7 +131,7 @@ class machine_interface:
         # print('Acquiring frame')
         temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
         # [384:1664] works well on actual Nion detector
-        temp = temp[384:1664, 384:1664]  # TODO, change into an input variable
+        temp = temp[640:1408, 640:1408]  # TODO, change into an input variable
         new_shape = [self.size, self.size]
         shape = (new_shape[0], temp.shape[0] // new_shape[0],new_shape[1], temp.shape[1] // new_shape[1])
         temp = temp.reshape(shape).mean(-1).mean(1)
