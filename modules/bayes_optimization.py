@@ -415,6 +415,7 @@ class BayesOpt:
 
         else:
             iter_bounds = self.bounds
+            relative_bounds = np.array([[lim[0], lim[1]] for lim in self.bounds])
         # print(self.iter_bound, relative_bounds)
   
         # options for finding the peak of the acquisition function:
@@ -513,10 +514,13 @@ class BayesOpt:
                     res = parallelbasinhopping(aqfcn,x0s,bkwargs)
                 
                 else:
-                    print("multi-processing, minimize")
+                    # print("multi-processing, minimize")
                     # use minimize
+                    start = time.time()
                     mkwargs = dict(bounds=iter_bounds, method=optmethod, options={'maxiter':maxiter}, tol=tolerance) # keyword args for scipy.optimize.minimize
                     res = parallelminimize(aqfcn,x0s,fargs,mkwargs,v0best,relative_bounds=relative_bounds)
+                    print(time.time() - start)
+                    # print(iter_bounds)
 
             else: # single-processing
 
@@ -528,6 +532,7 @@ class BayesOpt:
                     print("single-processing, minimize")
                     # res = minimize(aqfcn, x_start, args=(self.model, y_best, self.acq_func[1], self.alpha), method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
                     res = minimize(aqfcn, x_start, args=fargs, method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
+                    print(iter_bounds, res.x)
                 res = res.x
                 
         except:

@@ -1,0 +1,8 @@
+gp_ls = 0.0542
+gp_amp = 0.162
+gp_noise = 6.4e-5
+gp.prmean = 1.015
+ucb_param = [2, None]
+opt.bounds = [0,1]
+opt.iter_bound = True
+minimizer = multiprocessing, minimize

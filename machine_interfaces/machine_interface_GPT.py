@@ -145,7 +145,7 @@ class machine_interface:
     def getState(self): 
         ASCIIFILE = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/outscope.txt'
         PNGFILE = '/home/chenyu/Desktop/Bayesian-optimization-using-Gaussian-Process/ronchigram.npy'
-        os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        # os.environ["CUDA_VISIBLE_DEVICES"]="0"
         MConHBAR  =  2.59e12
         maxsig = 1  # determine how many standard deviations are we going to plot
 
@@ -154,27 +154,40 @@ class machine_interface:
 
         xlim, ylim, shadow = sim(
                 alpha = 1.0e-4*5,
-                S1 = 2.5e5,
-                S2 = 2.44e5 + self.S2 * 0.06e5,
-                H1 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
-                H2 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0] + self.x[0][1] * (x_high[1] - x_low[1]) + x_low[1],
-                S3 = self.x[0][4]* (x_high[5] - x_low[5]) + x_low[5],  # 119931.5,
-                S4 = self.x[0][5]* (x_high[6] - x_low[6]) + x_low[6],  # 648691.415,
-                S6 = self.x[0][2]* (x_high[2] - x_low[2]) + x_low[2],  # 390000,
-                S7 = self.x[0][3]* (x_high[3] - x_low[3]) + x_low[3],  # -654100.0
-                Obj = -3.7505e6,
 
-
-                # Setup for testing using varying only H1 and H2
+                # Setup for full GPT run
+                # S1 = 2.5e5,
+                # S2 = 2.44e5 + self.S2 * 0.06e5,
                 # H1 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
                 # H2 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0] + self.x[0][1] * (x_high[1] - x_low[1]) + x_low[1],
+                # S3 = self.x[0][4]* (x_high[5] - x_low[5]) + x_low[5],  # 119931.5,
+                # S4 = self.x[0][5]* (x_high[6] - x_low[6]) + x_low[6],  # 648691.415,
+                # S6 = self.x[0][2]* (x_high[2] - x_low[2]) + x_low[2],  # 390000,
+                # S7 = self.x[0][3]* (x_high[3] - x_low[3]) + x_low[3],  # -654100.0
+                # Obj = -3.7505e6,
+
+                # # Setup for testing using single variable and change H1, H2 simultaneously.
+                # H1 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
+                # H2 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
                 # S1 = 2.5e5,
                 # S2 = 2.5e5,
                 # S3 = 119931.5,
                 # S4 = 648691.415,
                 # S6 = 390000,
                 # S7 = -654100.0,
-                # Obj = -3.7505e6, # new objective lens setting with high conv angle
+                # Obj = -3.7505e6,
+
+
+                # Setup for testing using varying only H1 and H2
+                H1 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
+                H2 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0] + self.x[0][1] * (x_high[1] - x_low[1]) + x_low[1],
+                S1 = 2.5e5,
+                S2 = 2.5e5,
+                S3 = 119931.5,
+                S4 = 648691.415,
+                S6 = 390000,
+                S7 = -654100.0,
+                Obj = -3.7505e6, # new objective lens setting with high conv angle
              )      # the parameters that are not given an value here would be set to the default values, which could be found in uscope.py
                     # the sim function would return the Ronchigram, and save the outscope.txt file to the path that was calling this function
                     # i.e. the path of the Jupyte Notebook
@@ -194,7 +207,7 @@ class machine_interface:
             prediction = self.CNNmodel.predict(x_list, batch_size = 1)
             # print(prediction)
             objective_state = 1 - prediction[0][0]
-            print('Using CNN prediction.')
+            # print('Using CNN prediction.')
             del x_list, img_stack, frame, prediction
 
         # # Get emittance from electron profiles in the GPT output
@@ -235,7 +248,7 @@ class machine_interface:
         # # print(objective_state)
 
         # The rest is the same for two different emittance calculation methods
-        print('saving ronchigram...')
+        # print('saving ronchigram...')
         np.save('ronchigram.npy', shadow)
         # # save Ronchigram figure as a reference of tuning
         # # fig = plt.figure()
