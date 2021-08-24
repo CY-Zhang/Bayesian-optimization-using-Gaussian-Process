@@ -38,25 +38,25 @@ nrep = 1
 # Could be removed in real instrument
 iter_bounds = [(-5e-7, 5e-7),(-5e-7, 5e-7),(-5e-7, 5e-7),(-5e-6, 5e-6),(-5e-6, 5e-6),(-3.5e-6, 3.5e-6),(-3.5e-6, 3.5e-6),(-5e-5, 5e-5),(-5e-5, 5e-5),(-3.5e-5, 3.5e-5),
 (-3.5e-5, 3.5e-5),(-3.5e-5, 3.5e-5)] 
-abr_activate = [True, True, True, True, True, False, False, False, False, False, False, False]
+abr_activate = [True, True, True, False, False, False, False, False, False, False, False, False]
 # randomize starting point, in the simulator, the global minimum is at zero point.
 ndim = sum(abr_activate)
 dev_ids =  [str(x + 1) for x in np.arange(ndim)] #creat device ids (just numbers)
 rs = np.random.RandomState()
 
 # for _ in range(nrep):
-start_point = [[rs.rand() * 0.3 + 0.35 for x in np.arange(sum(abr_activate))]]
-print(start_point)
+start_point = [[rs.rand() * 0.5 + 0.25 for x in np.arange(sum(abr_activate))]]
+start_point = [[0.3, 0.3, 0.3]]
 
 #creat machine interface
 mi_module = importlib.import_module('machine_interfaces.machine_interface_Nion')
 mi = mi_module.machine_interface(dev_ids = dev_ids, start_point = start_point, CNNoption = 1, 
 CNNpath = 'C:/Users/ASUser/Downloads/Bayesian-optimization-using-Gaussian-Process/CNNmodels/VGG16_nion_30mradEmit+defocus_28mradApt.h5', act_list = abr_activate,
-readDefault = True)
-# mi = mi_module.machine_interface(dev_ids = dev_ids, start_point = start_point, CNNoption = 0, act_list = abr_activate)
+readDefault = True, detectCenter = True)
 mi.aperture = 0
 
 # Check the readout from machine interface
+print("Initial state of the machine interface: \n")
 print(mi.x)
 temp = mi.getState()
 print(temp[1][0][0])
@@ -64,7 +64,7 @@ print(temp[1][0][0])
 # Set up GP parameters
 gp_ls = [0.120, 0.112, 0.110, 0.143, 0.164, 0.101, 0.100, 0.150, 0.288, 0.185, 0.175, 0.181] 
 gp_ls = np.array([gp_ls[i] for i in np.arange(len(abr_activate)) if abr_activate[i]])
-gp_ls = gp_ls / 10
+gp_ls = gp_ls / 2
 print(gp_ls)
 gp_amp = 0.143
 gp_noise = 0.000053
@@ -77,7 +77,7 @@ gp = OGP(ndim, hyperparams)
 #create the bayesian optimizer that will use the gp as the model to optimize the machine 
 opt = BayesOpt(gp, mi, acq_func="UCB", start_dev_vals = mi.x, dev_ids = dev_ids, iter_bound= True)
 opt.ucb_params = np.array([2, None])
-opt.searchBoundScaleFactor = 2
+opt.searchBoundScaleFactor = 0.5
 # opt.ucb_params = np.array([0.002, 0.4])
 # opt.bounds = [(0,1) for i in np.arange(sum(abr_activate))]
 # print(opt.bounds)
@@ -86,7 +86,7 @@ obj_list = []
 ronch_list = []
 
 # Start running GP:
-Niter = 200
+Niter = 50
 for i in range(Niter):
   ronch_list.append(mi.frame)
   temp = opt.OptIter()
@@ -107,19 +107,19 @@ mi.stopAcquisition()
 # print(np.array(obj_list))
 
 # Save the GP process files
-idx = 0
-filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
+# idx = 0
+# filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
 
-while(os.path.isfile(path + filename)):
-  idx += 1
-  filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
-print(path + filename)
+# while(os.path.isfile(path + filename)):
+#   idx += 1
+#   filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
+# print(path + filename)
 
-np.save(path + filename, np.array(status_list))
-filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_prediction_UCB_2_0.npy'
-print(path + filename)
-np.save(path + filename, np.array(obj_list))
+# np.save(path + filename, np.array(status_list))
+# filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_prediction_UCB_2_0.npy'
+# print(path + filename)
+# np.save(path + filename, np.array(obj_list))
 
-filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_ronchigram_UCB_2_0.npy'
-print(path + filename)
-np.save(path + filename, np.array(ronch_list))
+# filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_ronchigram_UCB_2_0.npy'
+# print(path + filename)
+# np.save(path + filename, np.array(ronch_list))

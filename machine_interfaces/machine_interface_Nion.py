@@ -1,3 +1,4 @@
+# Basic libraries
 import numpy as np
 import os
 import threading
@@ -6,11 +7,12 @@ from keras import applications
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense
 import tensorflow as tf
+# Nion instrument related libraries
 from nion.utils import Registry
 
 class machine_interface:
 
-    def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = '', act_list = [], readDefault = False):
+    def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = '', act_list = [], readDefault = False, detectCenter = False):
         # Basic setups
         os.environ["CUDA_VISIBLE_DEVICES"]="0" # specify which GPU to use
         self.pvs = np.array(dev_ids)
@@ -43,8 +45,21 @@ class machine_interface:
         frame_parameters = self.ronchigram.get_current_frame_parameters()
         frame_parameters["binning"] = 1
         frame_parameters["exposure_ms"] = 250 # TODO, change to a variable
+
+        # Acquire a test frame to set the crop region based on center detected using COM.
+        # TODO: besides the center position, also detect the side length to use.
+        temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
+        if detectCenter:
+            x = np.linspace(0, temp.shape[1], num = temp.shape[1])
+            y = np.linspace(0, temp.shape[0], num = temp.shape[0])
+            xv, yv = np.meshgrid(x, y)
+            self.center_x = int(np.average(xv, weights = temp))
+            self.center_y = int(np.avergae(yv, weights = temp))
+        else:
+            self.center_x = temp.shape[0] / 2
+            self.center_y = temp.shape[1] / 2
         
-        # define a variable to save the frame acquired from camera
+        # Allocate empty array to save the frame acquired from camera
         self.size = 128
         self.frame = np.zeros([self.size, self.size])
 
@@ -95,6 +110,18 @@ class machine_interface:
         input += min
         return input
 
+    # function to scale Ronchigram to between [min, max] with the aperture considered, only rescale the part within the aperture.
+    # 08-24-21, not working well based on linescan tests.
+    def scale_range_aperture(input, min, max):
+        hist, bin_edges = np.histogram(np.ndarray.flatten(input), bins = 'auto')
+        idx = np.argmin(abs(np.gradient(hist)[0:len(hist)//2]))
+        threshold = bin_edges[idx]
+        input += -threshold
+        input[input<0] = 0
+        input /= np.max(input) / (max - min)
+        input += min
+        return input
+
     # function to generate an aperture mask on the Ronchigram
     def aperture_generator(self, px_size, simdim, ap_size):
         x = np.linspace(-simdim, simdim, px_size)
@@ -130,8 +157,7 @@ class machine_interface:
         # self.ronchigram.start_playing()
         # print('Acquiring frame')
         temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
-        # [384:1664] works well on actual Nion detector
-        temp = temp[640:1408, 640:1408]  # TODO, change into an input variable
+        temp = temp[self.center_y - 384 : self.center_y + 384, self.center_x - 384, self.center_x + 384]
         new_shape = [self.size, self.size]
         shape = (new_shape[0], temp.shape[0] // new_shape[0],new_shape[1], temp.shape[1] // new_shape[1])
         temp = temp.reshape(shape).mean(-1).mean(1)
