@@ -58,9 +58,8 @@ class linescan:
 
     def acquire_frame(self, ronchigram):
         temp = ronchigram.grab_next_to_start()[0].data
-        # temp = temp[384:1664, 384:1664]
-        # setup for VOA aperture in
-        temp = temp[640:1408, 640:1408]
+        # 384 px along each side, setup for VOA aperture in
+        temp = temp[self.center_y - 384 : self.center_y + 384, self.center_x - 384: self.center_x + 384]
         temp = self.rebin(temp, [128, 128])
         # print(temp.shape)
         self.image_stack.append(temp)
@@ -82,11 +81,20 @@ class linescan:
         frame_parameters["exposure_ms"] = self.exposure_ms
         ronchigram.start_playing(frame_parameters)
         stem_controller = Registry.get_component("stem_controller")
-        # set up aberration coefficients
-        idx = 0
-        for abr_coeff in self.abr_list:
-            stem_controller.SetVal(abr_coeff, self.default[idx])
-            idx += 1
+
+        # Setup the center position.
+        temp = ronchigram.grab_next_to_start()[0].data
+        x = np.linspace(0, temp.shape[1], num = temp.shape[1])
+        y = np.linspace(0, temp.shape[0], num = temp.shape[0])
+        xv, yv = np.meshgrid(x, y)
+        self.center_x = int(np.average(xv, weights = temp))
+        self.center_y = int(np.average(yv, weights = temp))
+
+        # set up aberration coefficients to the preset default ones.
+        # idx = 0
+        # for abr_coeff in self.abr_list:
+        #     stem_controller.SetVal(abr_coeff, self.default[idx])
+        #     idx += 1
 
     def rebin(self, arr, new_shape):
         shape = (new_shape[0], arr.shape[0] // new_shape[0],
@@ -129,21 +137,20 @@ obj = linescan('C:/Users/ASUser/Downloads/')
 # obj.acquire_series('C34.x', 2e-4, 100)
 # obj.acquire_series('C34.y', 1.5e-4, 100)
 
-obj.exposure_ms = 250
-
+obj.exposure_ms = 100
 obj.binning = 1
 obj.rep = 5
 obj.set_default()
-# obj.acquire_series('C10', 2e-6, 100)
-# obj.acquire_series('C12.x', 1.5e-6, 100)
-# obj.acquire_series('C12.y', 1.5e-6, 100)
-# obj.acquire_series('C21.x', 3e-5, 100)
-# obj.acquire_series('C21.y', 3e-5, 100)
-# obj.acquire_series('C23.x', 1e-5, 100)
-# obj.acquire_series('C23.y', 1e-5, 100)
-# obj.acquire_series('C30', 3e-4, 100)
-# obj.acquire_series('C32.x', 2e-4, 100)
-# obj.acquire_series('C32.y', 2e-4, 100)
+obj.acquire_series('C10', 2e-6, 100)
+obj.acquire_series('C12.x', 1.5e-6, 100)
+obj.acquire_series('C12.y', 1.5e-6, 100)
+obj.acquire_series('C21.x', 3e-5, 100)
+obj.acquire_series('C21.y', 3e-5, 100)
+obj.acquire_series('C23.x', 1e-5, 100)
+obj.acquire_series('C23.y', 1e-5, 100)
+obj.acquire_series('C30', 3e-4, 100)
+obj.acquire_series('C32.x', 2e-4, 100)
+obj.acquire_series('C32.y', 2e-4, 100)
 obj.acquire_series('C34.x', 1.5e-4, 100)
 obj.acquire_series('C34.y', 1.5e-4, 100)
 

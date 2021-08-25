@@ -46,7 +46,7 @@ rs = np.random.RandomState()
 
 # for _ in range(nrep):
 start_point = [[rs.rand() * 0.5 + 0.25 for x in np.arange(sum(abr_activate))]]
-start_point = [[0.3, 0.3, 0.3]]
+start_point = [[0.4, 0.1, 0.1]]
 
 #creat machine interface
 mi_module = importlib.import_module('machine_interfaces.machine_interface_Nion')
@@ -64,7 +64,7 @@ print(temp[1][0][0])
 # Set up GP parameters
 gp_ls = [0.120, 0.112, 0.110, 0.143, 0.164, 0.101, 0.100, 0.150, 0.288, 0.185, 0.175, 0.181] 
 gp_ls = np.array([gp_ls[i] for i in np.arange(len(abr_activate)) if abr_activate[i]])
-gp_ls = gp_ls / 2
+gp_ls = gp_ls
 print(gp_ls)
 gp_amp = 0.143
 gp_noise = 0.000053
@@ -78,7 +78,7 @@ gp = OGP(ndim, hyperparams)
 opt = BayesOpt(gp, mi, acq_func="UCB", start_dev_vals = mi.x, dev_ids = dev_ids, iter_bound= True)
 opt.ucb_params = np.array([2, None])
 opt.searchBoundScaleFactor = 0.5
-# opt.ucb_params = np.array([0.002, 0.4])
+opt.ucb_params = np.array([0.002, 0.4])
 # opt.bounds = [(0,1) for i in np.arange(sum(abr_activate))]
 # print(opt.bounds)
 status_list = []
@@ -86,7 +86,7 @@ obj_list = []
 ronch_list = []
 
 # Start running GP:
-Niter = 50
+Niter = 150
 for i in range(Niter):
   ronch_list.append(mi.frame)
   temp = opt.OptIter()
@@ -95,18 +95,18 @@ for i in range(Niter):
   print(i)
   print(temp[1][0])
 
-# set corrector to best seen state and stop the camera
-mi.setX([opt.best_seen()[0]])
-print(opt.best_seen())
-print(mi.default)
-# mi.setX([mi.default])
-mi.getState()
-mi.stopAcquisition()
+# # # set corrector to best seen state and stop the camera
+# mi.setX([opt.best_seen()[0]])
+# print(opt.best_seen())
+# print(mi.default)
+# # # mi.setX([mi.default])
+# # mi.getState()
+# # mi.stopAcquisition()
 
-# print(np.array(status_list))
-# print(np.array(obj_list))
+# # print(np.array(status_list))
+# # print(np.array(obj_list))
 
-# Save the GP process files
+# # Save the GP process files
 # idx = 0
 # filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
 
