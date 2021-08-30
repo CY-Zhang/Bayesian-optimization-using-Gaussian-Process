@@ -58,8 +58,9 @@ class linescan:
 
     def acquire_frame(self, ronchigram):
         temp = ronchigram.grab_next_to_start()[0].data
-        # 384 px along each side, setup for VOA aperture in
-        temp = temp[self.center_y - 384 : self.center_y + 384, self.center_x - 384: self.center_x + 384]
+        # 384 px along each side, setup for VOA aperture in Lowl30mrad
+        # 640 px along each side, setup for VOA aperture in Lowl50mrad
+        temp = temp[self.center_y - 640 : self.center_y + 640, self.center_x - 640: self.center_x + 640]
         temp = self.rebin(temp, [128, 128])
         # print(temp.shape)
         self.image_stack.append(temp)
@@ -105,7 +106,7 @@ class linescan:
 obj = linescan('C:/Users/ASUser/Downloads/')
 # obj.exposure_ms = 10
 # obj.binning = 1
-# obj.rep = 5
+obj.rep = 5
 # obj.set_default()
 # obj.acquire_series('C10', 2e-6, 100)
 # obj.acquire_series('C12.x', 1.5e-6, 100)
@@ -137,32 +138,32 @@ obj = linescan('C:/Users/ASUser/Downloads/')
 # obj.acquire_series('C34.x', 2e-4, 100)
 # obj.acquire_series('C34.y', 1.5e-4, 100)
 
-obj.exposure_ms = 100
-obj.binning = 1
-obj.rep = 5
-obj.set_default()
-obj.acquire_series('C10', 2e-6, 100)
-obj.acquire_series('C12.x', 1.5e-6, 100)
-obj.acquire_series('C12.y', 1.5e-6, 100)
-obj.acquire_series('C21.x', 3e-5, 100)
-obj.acquire_series('C21.y', 3e-5, 100)
-obj.acquire_series('C23.x', 1e-5, 100)
-obj.acquire_series('C23.y', 1e-5, 100)
-obj.acquire_series('C30', 3e-4, 100)
-obj.acquire_series('C32.x', 2e-4, 100)
-obj.acquire_series('C32.y', 2e-4, 100)
-obj.acquire_series('C34.x', 1.5e-4, 100)
-obj.acquire_series('C34.y', 1.5e-4, 100)
+# obj.exposure_ms = 50
+# obj.binning = 1
+# obj.rep = 5
+# obj.set_default()
+# obj.acquire_series('C10', 2e-6, 100)
+# obj.acquire_series('C12.x', 1.5e-6, 100)
+# obj.acquire_series('C12.y', 1.5e-6, 100)
+# obj.acquire_series('C21.x', 3e-5, 100)
+# obj.acquire_series('C21.y', 3e-5, 100)
+# obj.acquire_series('C23.x', 1e-5, 100)
+# obj.acquire_series('C23.y', 1e-5, 100)
+# obj.acquire_series('C30', 3e-4, 100)
+# obj.acquire_series('C32.x', 2e-4, 100)
+# obj.acquire_series('C32.y', 2e-4, 100)
+# obj.acquire_series('C34.x', 1.5e-4, 100)
+# obj.acquire_series('C34.y', 1.5e-4, 100)
 
 # obj.exposure_ms = 100
 # obj.set_default()
 # obj.acquire_series('C12.x', 1.5e-6, 100)
 
-# obj.exposure_ms = 250
-# obj.set_default()
-# obj.acquire_series('C12.x', 1.5e-6, 100)
+obj.exposure_ms = 250
+obj.set_default()
+obj.acquire_series('C12.x', 1.5e-6, 100)
 
-# obj.exposure_ms = 500
-# obj.set_default()
-# obj.acquire_series('C12.x', 1.5e-6, 100)
+obj.exposure_ms = 500
+obj.set_default()
+obj.acquire_series('C12.x', 1.5e-6, 100)
 obj.stop_playing()

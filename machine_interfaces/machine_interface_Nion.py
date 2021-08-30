@@ -157,7 +157,7 @@ class machine_interface:
         # self.ronchigram.start_playing()
         # print('Acquiring frame')
         temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
-        temp = temp[self.center_y - 384 : self.center_y + 384, self.center_x - 384: self.center_x + 384]
+        temp = temp[self.center_y - 640 : self.center_y + 640, self.center_x - 640: self.center_x + 640]
         new_shape = [self.size, self.size]
         shape = (new_shape[0], temp.shape[0] // new_shape[0],new_shape[1], temp.shape[1] // new_shape[1])
         temp = temp.reshape(shape).mean(-1).mean(1)
