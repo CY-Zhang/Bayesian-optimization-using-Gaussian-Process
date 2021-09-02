@@ -167,27 +167,27 @@ class machine_interface:
                 # Obj = -3.7505e6,
 
                 # # Setup for testing using single variable and change H1, H2 simultaneously.
-                # H1 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
-                # H2 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
-                # S1 = 2.5e5,
-                # S2 = 2.5e5,
-                # S3 = 119931.5,
-                # S4 = 648691.415,
-                # S6 = 390000,
-                # S7 = -654100.0,
-                # Obj = -3.7505e6,
-
-
-                # Setup for testing using varying only H1 and H2
                 H1 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
-                H2 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0] + self.x[0][1] * (x_high[1] - x_low[1]) + x_low[1],
+                H2 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
                 S1 = 2.5e5,
                 S2 = 2.5e5,
                 S3 = 119931.5,
                 S4 = 648691.415,
                 S6 = 390000,
                 S7 = -654100.0,
-                Obj = -3.7505e6, # new objective lens setting with high conv angle
+                Obj = -3.7505e6,
+
+
+                # Setup for testing using varying only H1 and H2
+                # H1 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0],
+                # H2 = self.x[0][0] * (x_high[0] - x_low[0]) + x_low[0] + self.x[0][1] * (x_high[1] - x_low[1]) + x_low[1],
+                # S1 = 2.5e5,
+                # S2 = 2.5e5,
+                # S3 = 119931.5,
+                # S4 = 648691.415,
+                # S6 = 390000,
+                # S7 = -654100.0,
+                # Obj = -3.7505e6, # new objective lens setting with high conv angle
              )      # the parameters that are not given an value here would be set to the default values, which could be found in uscope.py
                     # the sim function would return the Ronchigram, and save the outscope.txt file to the path that was calling this function
                     # i.e. the path of the Jupyte Notebook

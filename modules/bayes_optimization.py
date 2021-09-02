@@ -8,7 +8,7 @@ from scipy.optimize import minimize
 # from scipy.optimize import approx_fprime
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as Ck, WhiteKernel
-from Modules.OnlineGP import OGP
+from modules.OnlineGP import OGP
 try:
     from scipy.optimize import basinhopping
     basinhoppingQ = True
@@ -415,6 +415,7 @@ class BayesOpt:
 
         else:
             iter_bounds = self.bounds
+            relative_bounds = self.bounds
         # print(self.iter_bound, relative_bounds, iter_bounds)
   
         # options for finding the peak of the acquisition function:

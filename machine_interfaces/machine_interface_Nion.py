@@ -44,7 +44,7 @@ class machine_interface:
         self.ronchigram = self.stem_controller.ronchigram_camera
         frame_parameters = self.ronchigram.get_current_frame_parameters()
         frame_parameters["binning"] = 1
-        frame_parameters["exposure_ms"] = 250 # TODO, change to a variable
+        frame_parameters["exposure_ms"] = 100 # TODO, change to a variable
 
         # Acquire a test frame to set the crop region based on center detected using COM.
         # TODO: besides the center position, also detect the side length to use.
@@ -112,7 +112,7 @@ class machine_interface:
 
     # function to scale Ronchigram to between [min, max] with the aperture considered, only rescale the part within the aperture.
     # 08-24-21, not working well based on linescan tests.
-    def scale_range_aperture(input, min, max):
+    def scale_range_aperture(self, input, min, max):
         hist, bin_edges = np.histogram(np.ndarray.flatten(input), bins = 'auto')
         idx = np.argmin(abs(np.gradient(hist)[0:len(hist)//2]))
         threshold = bin_edges[idx]
@@ -169,7 +169,7 @@ class machine_interface:
     # will be updated
     def getCNNprdiction(self, frame_array):
         x_list = []
-        frame_array = self.scale_range(frame_array, 0, 1)
+        frame_array = self.scale_range_aperture(frame_array, 0, 1)
         if self.aperture != 0:
             frame_array = frame_array * self.aperture_generator(128, 40, self.aperture)
         new_channel = np.zeros(frame_array.shape)
