@@ -12,12 +12,13 @@ from nion.utils import Registry
 
 class machine_interface:
 
-    def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = '', act_list = [], readDefault = False, detectCenter = False):
+    def __init__(self, dev_ids, start_point = None, CNNoption = 1, CNNpath = '', act_list = [], readDefault = False, detectCenter = False, exposure_t = 100, remove_buffer = True):
         # Basic setups
         os.environ["CUDA_VISIBLE_DEVICES"]="0" # specify which GPU to use
         self.pvs = np.array(dev_ids)
         self.name = 'Nion'
         self.CNNoption = CNNoption
+        self.remove_buffer = remove_buffer
         
         # initialize aberration list, this has to come before setting aberrations
         self.abr_list = ["C10", "C12.x", "C12.y", "C21.x", "C21.y", "C23.x", "C23.y", "C30", 
@@ -44,7 +45,7 @@ class machine_interface:
         self.ronchigram = self.stem_controller.ronchigram_camera
         frame_parameters = self.ronchigram.get_current_frame_parameters()
         frame_parameters["binning"] = 1
-        frame_parameters["exposure_ms"] = 100 # TODO, change to a variable
+        frame_parameters["exposure_ms"] = exposure_t
 
         # Acquire a test frame to set the crop region based on center detected using COM.
         # TODO: besides the center position, also detect the side length to use.
@@ -156,6 +157,10 @@ class machine_interface:
         self.frame = np.zeros([self.size, self.size])
         # self.ronchigram.start_playing()
         # print('Acquiring frame')
+
+        # if remove_buffer option is on, grab a frame without saving it.
+        if self.remove_buffer:
+            self.ronchigram.grab_next_to_start()
         temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
         temp = temp[self.center_y - 640 : self.center_y + 640, self.center_x - 640: self.center_x + 640]
         new_shape = [self.size, self.size]
@@ -171,7 +176,7 @@ class machine_interface:
         x_list = []
         frame_array = self.scale_range_aperture(frame_array, 0, 1)
         if self.aperture != 0:
-            frame_array = frame_array * self.aperture_generator(128, 40, self.aperture)
+            frame_array = frame_array * self.aperture_generator(128, 50, self.aperture)
         new_channel = np.zeros(frame_array.shape)
         img_stack = np.dstack((frame_array, new_channel, new_channel))
         x_list.append(img_stack)

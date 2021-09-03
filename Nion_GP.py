@@ -52,7 +52,7 @@ start_point = [[0.4, 0.4, 0.4]]
 mi_module = importlib.import_module('machine_interfaces.machine_interface_Nion')
 mi = mi_module.machine_interface(dev_ids = dev_ids, start_point = start_point, CNNoption = 1, 
 CNNpath = 'C:/Users/ASUser/Downloads/Bayesian-optimization-using-Gaussian-Process/CNNmodels/VGG16_nion_2ndOrder_45mradEmit+defocus_45mradApt.h5', act_list = abr_activate,
-readDefault = True, detectCenter = True)
+readDefault = True, detectCenter = True, exposure_t = 100, remove_buffer = True)
 mi.aperture = 0
 
 # Check the readout from machine interface
@@ -61,39 +61,39 @@ print(mi.x)
 temp = mi.getState()
 print(temp[1][0][0])
 
-# # Set up GP parameters
-# gp_ls = [0.11, 0.11, 0.15 , 0.143, 0.164, 0.101, 0.100, 0.150, 0.288, 0.185, 0.175, 0.181] 
-# gp_ls = np.array([gp_ls[i] for i in np.arange(len(abr_activate)) if abr_activate[i]])
-# gp_ls = gp_ls
-# print(gp_ls)
-# gp_amp = 0.143
-# gp_noise = 0.000053
+# Set up GP parameters
+gp_ls = [0.11, 0.11, 0.15 , 0.143, 0.164, 0.101, 0.100, 0.150, 0.288, 0.185, 0.175, 0.181] 
+gp_ls = np.array([gp_ls[i] for i in np.arange(len(abr_activate)) if abr_activate[i]])
+gp_ls = gp_ls
+print(gp_ls)
+gp_amp = 0.143
+gp_noise = 0.000053
 
-# gp_precisionmat =  np.array(np.diag(1/(gp_ls**2)))
-# ndim = len(dev_ids)
-# hyperparams = {'precisionMatrix': gp_precisionmat, 'amplitude_covar': gp_amp, 'noise_variance': gp_noise} 
-# gp = OGP(ndim, hyperparams)
+gp_precisionmat =  np.array(np.diag(1/(gp_ls**2)))
+ndim = len(dev_ids)
+hyperparams = {'precisionMatrix': gp_precisionmat, 'amplitude_covar': gp_amp, 'noise_variance': gp_noise} 
+gp = OGP(ndim, hyperparams)
 
-# #create the bayesian optimizer that will use the gp as the model to optimize the machine 
-# opt = BayesOpt(gp, mi, acq_func="UCB", start_dev_vals = mi.x, dev_ids = dev_ids, iter_bound= True)
-# opt.ucb_params = np.array([2, None])
-# opt.searchBoundScaleFactor = 0.5
-# # opt.ucb_params = np.array([0.002, 0.4])
-# # opt.bounds = [(0,1) for i in np.arange(sum(abr_activate))]
-# # print(opt.bounds)
-# status_list = []
-# obj_list = []
-# ronch_list = []
+#create the bayesian optimizer that will use the gp as the model to optimize the machine 
+opt = BayesOpt(gp, mi, acq_func="UCB", start_dev_vals = mi.x, dev_ids = dev_ids, iter_bound= True)
+opt.ucb_params = np.array([2, None])
+opt.searchBoundScaleFactor = 0.5
+# opt.ucb_params = np.array([0.002, 0.4])
+# opt.bounds = [(0,1) for i in np.arange(sum(abr_activate))]
+# print(opt.bounds)
+status_list = []
+obj_list = []
+ronch_list = []
 
-# # Start running GP:
-# Niter = 150
-# for i in range(Niter):
-#   ronch_list.append(mi.frame)
-#   temp = opt.OptIter()
-#   status_list.append(temp[0][0])
-#   obj_list.append(temp[1][0])
-#   print(i)
-#   print(temp[1][0])
+# Start running GP:
+Niter = 150
+for i in range(Niter):
+  ronch_list.append(mi.frame)
+  temp = opt.OptIter()
+  status_list.append(temp[0][0])
+  obj_list.append(temp[1][0])
+  print(i)
+  print(temp[1][0])
 
 # # # set corrector to best seen state and stop the camera
 # mi.setX([opt.best_seen()[0]])

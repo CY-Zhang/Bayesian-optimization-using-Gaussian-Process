@@ -311,7 +311,7 @@ class BayesOpt:
             self.model.update(x_new, y_new)
 
             
-    def OptIter(self,pause=0):
+    def OptIter(self, pause=0):
         """
         runs the optimizer for one iteration
         """
