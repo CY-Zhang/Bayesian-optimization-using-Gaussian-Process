@@ -14,6 +14,7 @@ import importlib
 import time
 import os
 import tensorflow as tf
+import pickle
 
 '''
 06-23-21 First version of working Nion GP, tested for 1000 iterations, won't overflow GPU memory.
@@ -38,7 +39,7 @@ nrep = 1
 # Could be removed in real instrument
 iter_bounds = [(-5e-7, 5e-7),(-5e-7, 5e-7),(-5e-7, 5e-7),(-5e-6, 5e-6),(-5e-6, 5e-6),(-3.5e-6, 3.5e-6),(-3.5e-6, 3.5e-6),(-5e-5, 5e-5),(-5e-5, 5e-5),(-3.5e-5, 3.5e-5),
 (-3.5e-5, 3.5e-5),(-3.5e-5, 3.5e-5)] 
-abr_activate = [True, True, True, False, False, False, False, False, False, False, False, False]
+abr_activate = [True, False, False, False, False, False, False, False, False, False, False, False]
 # randomize starting point, in the simulator, the global minimum is at zero point.
 ndim = sum(abr_activate)
 dev_ids =  [str(x + 1) for x in np.arange(ndim)] #creat device ids (just numbers)
@@ -46,7 +47,8 @@ rs = np.random.RandomState()
 
 # for _ in range(nrep):
 start_point = [[rs.rand() * 0.5 + 0.25 for x in np.arange(sum(abr_activate))]]
-start_point = [[0.4, 0.4, 0.4]]
+start_point = [[0.3, 0.3, 0.3]]
+start_point = [[0.1]]
 
 #creat machine interface
 mi_module = importlib.import_module('machine_interfaces.machine_interface_Nion')
@@ -79,8 +81,8 @@ opt = BayesOpt(gp, mi, acq_func="UCB", start_dev_vals = mi.x, dev_ids = dev_ids,
 opt.ucb_params = np.array([2, None])
 opt.searchBoundScaleFactor = 0.5
 # opt.ucb_params = np.array([0.002, 0.4])
-# opt.bounds = [(0,1) for i in np.arange(sum(abr_activate))]
-# print(opt.bounds)
+opt.bounds = [(0,1) for i in np.arange(sum(abr_activate))]
+print(opt.bounds)
 status_list = []
 obj_list = []
 ronch_list = []
@@ -95,31 +97,35 @@ for i in range(Niter):
   print(i)
   print(temp[1][0])
 
-# # # set corrector to best seen state and stop the camera
-# mi.setX([opt.best_seen()[0]])
-# print(opt.best_seen())
-# print(mi.default)
-# # # mi.setX([mi.default])
-# # mi.getState()
-# # mi.stopAcquisition()
+# # set corrector to best seen state and stop the camera
+mi.setX([opt.best_seen()[0]])
+print(opt.best_seen())
+print(mi.default)
+# # mi.setX([mi.default])
+# mi.getState()
+# mi.stopAcquisition()
 
-# # print(np.array(status_list))
-# # print(np.array(obj_list))
+# print(np.array(status_list))
+# print(np.array(obj_list))
 
-# # Save the GP process files
-# idx = 0
-# filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
+# Save the GP process files
+idx = 0
+filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
 
-# while(os.path.isfile(path + filename)):
-#   idx += 1
-#   filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
-# print(path + filename)
+while(os.path.isfile(path + filename)):
+  idx += 1
+  filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) + '_abr_coeff_UCB_2_0.npy'
+print(path + filename)
+np.save(path + filename, np.array(status_list))
 
-# np.save(path + filename, np.array(status_list))
-# filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_prediction_UCB_2_0.npy'
-# print(path + filename)
-# np.save(path + filename, np.array(obj_list))
+filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_prediction_UCB_2_0.npy'
+print(path + filename)
+np.save(path + filename, np.array(obj_list))
 
-# filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_ronchigram_UCB_2_0.npy'
-# print(path + filename)
-# np.save(path + filename, np.array(ronch_list))
+filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_ronchigram_UCB_2_0.npy'
+print(path + filename)
+np.save(path + filename, np.array(ronch_list))
+
+filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_final_model_UCB_2_0.pickle'
+print(path + filename)
+pickle.dump(opt, open(filename, "wb"))

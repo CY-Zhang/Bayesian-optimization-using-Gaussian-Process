@@ -10,21 +10,17 @@ from scipy.ndimage.filters import gaussian_filter
 
 GDFFILE   = "temp.gdf" 
 ASCIIFILE = "outscope.txt"
-TRANSFILE = "trans.gdf"
-TRANSASCII = "trans.txt"
-ROOT      = "/nfs/acc/temp/cjd257/gpt310x64/bin/"
 EXE       = "/home/chenyu/Software/gpt310x64/bin/gpt"
 EXETXT    = "/home/chenyu/Software/gpt310x64/bin/gdf2a"
 EXETRANS  = "/home/chenyu/Software/gpt310x64/bin/gdftrans"
 MConHBAR  =  2.59e12 #inverse meters
-# sampleL = 5e-10
-sampleL = 2.096e-9*4
-sampleL = 9e-9
 sampleL = 32 * 0.396e-9
+# sampleL = 2.096e-9 * 4
+# sampleL = 9e-9
 sampleScale = 1
-errorsigmaL = 1.0e-6
+errorsigmaL = 0.0
 errorsigmaTheta = 0.0
-maxsig = 1.0
+maxsig = 1.5
 #H1 = 1228.5
 #S6 = 390000
 #S7 =-680186.0
@@ -37,8 +33,6 @@ params = {"sol1nI"  :   2.5e5,
           "sol2cH"  :   0.0,
           "sol2cV"  :   0.0,
           "hex1G"   :   899,
-          "hex1cH"  :   0.0,
-          "hex1cV"  :   0.0,
           "soltnI"  :   1.199315e5,
           "soltcH"  :   0.0,
           "soltcV"  :   0.0,
@@ -49,8 +43,6 @@ params = {"sol1nI"  :   2.5e5,
           "csol2cH" :   0.0,
           "csol2cV" :   0.0,
           "hex2G"   :   899,
-          "hex2cH"  :   0.0,
-          "hex2cV"  :   0.0,
           "csol3nI" :   3.9e5,
           "csol3cH" :   0.0,
           "csol3cV" :   0.0,
@@ -87,8 +79,6 @@ def sim(S1    = params["sol1nI"],
         S3CH  = params["soltcH"],
         S3CV  = params["soltcV"], 
         H1    = params["hex1G"],
-        H1CH  = params["hex1cH"],
-        H1CV  = params["hex1cV"],
         S4    = params["csol1nI"],
         S4CH  = params["csol1cH"],
         S4CV  = params["csol1cV"],
@@ -96,8 +86,6 @@ def sim(S1    = params["sol1nI"],
         S5CH  = params["csol2cH"],
         S5CV  = params["csol2cV"],
         H2    = params["hex2G"],
-        H2CH  = params["hex2cH"],
-        H2CV  = params["hex2cV"],
         S6    = params["csol3nI"],
         S6CH  = params["csol3cH"],
         S6CV  = params["csol3cV"],
@@ -125,21 +113,16 @@ def sim(S1    = params["sol1nI"],
               -cos(r[3]*erTh)*sin(r[4]*erTh)] for r in rs] 
     cmdA = "{} -o {} hexuscope.in {}{}".format(EXE, GDFFILE, 
           "".join(["{}={} ".format(x,y) for x, y in zip(params.keys(), 
-          [S1, S1CH, S1CV, S2, S2CH, S2CV, H1, H1CH, H1CV, S3, 
+          [S1, S1CH, S2CV, S2, S2CH, S2CV, H1, S3, 
            S3CH, S3CV, S4, S4CH, S4CV, 
-           S5, S5CH, S5CV, H2, H2CH, H2CV, S6, S6CH, S6CV, S7, S7CH, S7CV, Obj, ObjCH, ObjCV, S9, alpha, theta, delta])]), 
+           S5, S5CH, S5CV, H2, S6, S6CH, S6CV, S7, S7CH, S7CV, Obj, ObjCH, ObjCV, S9, alpha, theta, delta])]), 
           "".join(["{}={} ".format(s, t) for x, y in zip(errornames, errors) for s, t in zip(x, y)]))
-    cmdC = "{} -o {} {} time x y z G".format(EXETRANS, TRANSFILE, GDFFILE)
-
     cmdB = "{} -o {} {}".format(EXETXT, ASCIIFILE, GDFFILE)
-
-    cmdD = "{} -o {} {}".format(EXETXT, TRANSASCII, TRANSFILE)
     
-    # cmdA,C,D to track the particles, cmdA,B to run standard screen
+    if os.path.exists(ASCIIFILE):
+      os.remove(ASCIIFILE)
     os.system(cmdA)
-    # os.system(cmdC)
     os.system(cmdB)
-    # os.system(cmdD)
     screen =  np.loadtxt(ASCIIFILE, skiprows=5)
     
     x  = screen[:,0]
@@ -152,12 +135,10 @@ def sim(S1    = params["sol1nI"],
 
     meanky = np.mean(ky)
     sigky  = np.std(ky)
-    
-    N = 40
-    # set a fixed kx, ky limit if necessary
-    sigkx = 0.040 / maxsig
-    sigky = 0.040 / maxsig
 
+    N = 40
+    sigkx = .040/maxsig
+    sigky = .040/maxsig
     x_bins = [[[] for n in range(0,N)] for m in range(0,N)]
     y_bins = [[[] for n in range(0,N)] for m in range(0,N)]
 
@@ -166,7 +147,6 @@ def sim(S1    = params["sol1nI"],
 
     kx_grid, ky_grid = np.meshgrid(sigkx*np.linspace(-maxsig, maxsig, N),
                                  sigky*np.linspace(-maxsig, maxsig, N))
-
 
     for xi, yi, kxi, kyi in zip(x, y, kx, ky):
         i = int(0.5*N*((kyi-meanky)/(maxsig*sigky)) + 0.5*N)
@@ -189,10 +169,10 @@ def sim(S1    = params["sol1nI"],
     xfunc = interpolate.SmoothBivariateSpline(kx_grid[index].flatten(), ky_grid[index].flatten(), x_grid[index].flatten(), kx=5, ky=5)
     yfunc = interpolate.SmoothBivariateSpline(kx_grid[index].flatten(), ky_grid[index].flatten(), y_grid[index].flatten(), kx=5, ky=5)
 
-    ky_fine = np.linspace(-sigkx*maxsig, sigkx*maxsig, 201)
-    kx_fine = np.linspace(-sigkx*maxsig, sigkx*maxsig, 201)
+    ky_fine = np.linspace(-sigkx*maxsig, sigkx*maxsig, 128)
+    kx_fine = np.linspace(-sigkx*maxsig, sigkx*maxsig, 128)
 
-    FILENAME = "trnsmssn_antialiasing.pickle"
+    FILENAME = "/home/chenyu/Desktop/GaussianProcess/GPTrelated/trnsmssn_antialiasing.pickle"
 
     with open(FILENAME, "rb") as f:
         trnsmssn = pickle.load(f)

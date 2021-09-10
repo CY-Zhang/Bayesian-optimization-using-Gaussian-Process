@@ -46,6 +46,7 @@ class machine_interface:
         frame_parameters = self.ronchigram.get_current_frame_parameters()
         frame_parameters["binning"] = 1
         frame_parameters["exposure_ms"] = exposure_t
+        self.ronchigram.start_playing(frame_parameters)
 
         # Acquire a test frame to set the crop region based on center detected using COM.
         # TODO: besides the center position, also detect the side length to use.
@@ -160,6 +161,7 @@ class machine_interface:
 
         # if remove_buffer option is on, grab a frame without saving it.
         if self.remove_buffer:
+            print("remove buffer")
             self.ronchigram.grab_next_to_start()
         temp = np.asarray(self.ronchigram.grab_next_to_start()[0])
         temp = temp[self.center_y - 640 : self.center_y + 640, self.center_x - 640: self.center_x + 640]

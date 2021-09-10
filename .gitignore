@@ -11,3 +11,6 @@ __pycache__/
 *.out
 *.npy
 *.png
+temp.gdf
+GPTrelated/outscope.txt
+GPTrelated/shadow900.7.png
