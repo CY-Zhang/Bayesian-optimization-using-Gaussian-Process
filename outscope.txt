@@ -1,6 +1,6 @@
 @logo      B&M-General Particle Tracer
 numderivs           0
-cputime     1.500e+01
+cputime     2.400e+01
 position    9.900e-01
             x           y           z         rxy          Bx          By          Bz           G           t           m           q      nmacro      rmacro          ID 
   -1.184e-07 -3.340e-07  9.900e-01  3.544e-07 -2.228e-02 -6.385e-02  6.920e-01  1.391e+00  6.764e-09  9.110e-31  1.602e-19  1.000e+00  0.000e+00  1.000e+00 

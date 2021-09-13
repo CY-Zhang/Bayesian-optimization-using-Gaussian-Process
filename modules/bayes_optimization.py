@@ -411,7 +411,6 @@ class BayesOpt:
 
             bound_lengths = self.searchBoundScaleFactor * 3. * self.lengthscales # 3x hyperparam lengths
             relative_bounds = np.transpose(np.array([-bound_lengths, bound_lengths]))
-            
             iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
 
         else:
