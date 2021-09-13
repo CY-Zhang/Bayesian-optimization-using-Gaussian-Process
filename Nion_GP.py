@@ -14,7 +14,7 @@ import importlib
 import time
 import os
 import tensorflow as tf
-import pickle
+import h5py
 
 '''
 06-23-21 First version of working Nion GP, tested for 1000 iterations, won't overflow GPU memory.
@@ -54,7 +54,7 @@ start_point = [[0.1]]
 mi_module = importlib.import_module('machine_interfaces.machine_interface_Nion')
 mi = mi_module.machine_interface(dev_ids = dev_ids, start_point = start_point, CNNoption = 1, 
 CNNpath = 'C:/Users/ASUser/Downloads/Bayesian-optimization-using-Gaussian-Process/CNNmodels/VGG16_nion_2ndOrder_45mradEmit+defocus_45mradApt.h5', act_list = abr_activate,
-readDefault = True, detectCenter = True, exposure_t = 100, remove_buffer = True)
+readDefault = True, detectCenter = True, exposure_t = 500, remove_buffer = True)
 mi.aperture = 0
 
 # Check the readout from machine interface
@@ -64,11 +64,11 @@ temp = mi.getState()
 print(temp[1][0][0])
 
 # Set up GP parameters
-gp_ls = [0.11, 0.11, 0.15 , 0.143, 0.164, 0.101, 0.100, 0.150, 0.288, 0.185, 0.175, 0.181] 
+gp_ls = [0.175, 0.075, 0.075 , 0.143, 0.164, 0.101, 0.100, 0.150, 0.288, 0.185, 0.175, 0.181] 
 gp_ls = np.array([gp_ls[i] for i in np.arange(len(abr_activate)) if abr_activate[i]])
-gp_ls = gp_ls
+gp_ls = gp_ls / 2
 print(gp_ls)
-gp_amp = 0.143
+gp_amp = 0.143 / 2
 gp_noise = 0.000053
 
 gp_precisionmat =  np.array(np.diag(1/(gp_ls**2)))
@@ -126,6 +126,33 @@ filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_ronchigram_UCB_2_0.npy'
 print(path + filename)
 np.save(path + filename, np.array(ronch_list))
 
-filename = 'GPrun_' + str(Niter) + 'iter_' + str(idx) +'_final_model_UCB_2_0.pickle'
-print(path + filename)
-pickle.dump(opt, open(filename, "wb"))
+# save the data using hdf5
+idx = 0
+filename = 'GPrun_' + str(ndim) + 'pars_' +  str(Niter) + 'iter_' + str(idx) + '.h5'
+
+f = h5py.File(filename, 'a')
+# Group to save the data
+grp = f.create_group('Data')
+grp.create_dataset('ronchigram', data = np.array(ronch_list))
+grp.create_dataset('prediction', data = np.array(obj_list))
+grp.create_dataset('parameters', data = np.array(status_list))
+
+# Group to save GP parameters
+grp2 = grp.create_group('GP_parmeters')
+grp2['prmean'] = 0
+grp2['niter'] = Niter
+grp2['ndim'] = ndim
+grp2['GP_lengthscale'] = gp_ls
+grp2['GP_amp'] = gp_amp
+grp2['GP_noise'] = gp_noise
+grp2['start_point'] = start_point[0]
+grp2['ucb_param'] = opt.ucb_params
+grp2['searchBoundScaleFactor'] = opt.searchBoundScaleFactor
+
+# Group to save the instrument parameters
+grp3 = grp.create_group('exp_parameters')
+grp3['exposure_time_ms'] = mi.exposure_t
+grp3['active_aberration'] = abr_activate
+grp3['aberration_lim'] = mi.abr_limit
+
+f.close()

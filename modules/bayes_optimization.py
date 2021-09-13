@@ -1,6 +1,7 @@
 # -*- coding: iso-8859-1 -*-
 
 import os 
+import scipy
 import operator as op
 import numpy as np
 # from scipy.stats import norm
@@ -529,7 +530,7 @@ class BayesOpt:
                     print("single-processing, minimize  " + str(x_start))
                     print(str(iter_bounds))
                     # res = minimize(aqfcn, x_start, args=(self.model, y_best, self.acq_func[1], self.alpha), method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
-                    res = minimize(aqfcn, x_start, args=fargs, method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
+                    res = scipy.optimize.minimize(aqfcn, x_start, args=fargs, method=optmethod,tol=tolerance,bounds=iter_bounds,options={'maxiter':maxiter})
                     print(res.x)
                 res = res.x
                 
